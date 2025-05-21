@@ -42,6 +42,14 @@ struct digital_output_s {
     bool state;   /*!< Estado de la salida digital */
 };
 
+/*! Estructura que representa una entrada digital*/
+struct digital_input_s {
+    uint8_t port; /*!< Puerto de la entrada digital */
+    uint8_t pin;  /*!< Pin de la entrada digital */
+    bool inverted;   /*!< logica de entrada digital */
+    bool last_state; /*!< Estado anterior de la entrada digital */
+};
+
 /* === Private function declarations =============================================================================== */
 
 /* === Private variable definitions ================================================================================ */
@@ -71,6 +79,50 @@ void DigitalOutput_Deactivate(digital_output_t self) {
 
 void DigitalOutput_Toggle(digital_output_t self) {
     Chip_GPIO_SetPinToggle(LPC_GPIO_PORT, self->port, self->pin);
+}
+
+digital_input_t DigitalInput_Create(uint8_t gpio, uint8_t bit, bool inverted){
+    digital_input_t self = malloc(sizeof(struct digital_input_s));
+    if (self != NULL) {
+        self->port = gpio;
+        self->pin = bit;
+        self->inverted = inverted;
+        self->last_state = DigitalInput_GetIsActive(self);
+    }
+    return self;
+}
+
+bool DigitalInput_GetIsActive(digital_input_t self){
+    bool state = true; //llamar a la funcion del fabricante y comparar con 1
+    
+    if(self->inverted){
+        state = !state;
+    }
+    return true;
+}
+
+digital_state_t Digital_WasChanged(digital_input_t self){
+
+    digital_state_t result = DIGITAL_INPUT_WAS_CHANGED;
+
+    bool state = DigitalInput_GetIsActive(self);
+
+    if (state && self->last_state) {
+        result = DIGITAL_INPUT_WAS_ACTIVATED;
+    } else if (!state && !self->last_state) {
+        result = DIGITAL_INPUT_WAS_DEACTIVATED;
+    } 
+    self->last_state = state;
+    return result;
+
+}
+
+bool Digital_WasActivated(digital_input_t self){
+    return DIGITAL_INPUT_WAS_ACTIVATED == Digital_WasChanged(self);
+}
+
+bool Digitalt_WasDeactivated(digital_input_t self){
+    return DIGITAL_INPUT_WAS_DEACTIVATED == Digital_WasChanged(self);
 }
 
 /* === End of documentation ======================================================================================== */

@@ -20,13 +20,17 @@ SPDX-License-Identifier: MIT
 #ifndef DIGITAL_H_
 #define DIGITAL_H_
 
-/** @file digitales.h
+/** @file digital.h
  ** @brief Declaraciones del módulo para la gestión de entradas y salidas digitales.
+ **
+ ** Esta bibloteca puede usar memoria estática o dinámica. La memoria estática se define en el archivo de configuración
+ *@anchor "config.h".
  **/
 
 /* === Headers files inclusions ==================================================================================== */
 
 #include <stdint.h>
+#include <stdbool.h>
 
 /* === Header for C++ compatibility ================================================================================ */
 
@@ -38,21 +42,31 @@ extern "C" {
 
 /* === Public data type declarations =============================================================================== */
 
+typedef enum digital_state_e {
+    DIGITAL_INPUT_WAS_DEACTIVATED = -1,
+    DIGITAL_INPUT_WAS_ACTIVATED = 1,
+    DIGITAL_INPUT_WAS_CHANGED = 0,
+} digital_state_t;
+
 //! Estructura que representa una salida digital.
 typedef struct digital_output_s * digital_output_t;
+//! Estructura que representa una entrada digital.
+typedef struct digital_input_s * digital_input_t;
 
 /* === Public variable declarations ================================================================================ */
 
 /* === Public function declarations ================================================================================ */
 
 /**
- * @brief
+ * @brief Funcion para crear una salida digital.
+ * Esta funcion crea un objeto de la clase salida digital. La locacion de memoria depende
+ * de la @ref configuracion de la bibloteca "config.h".
  *
- * @param port
- * @param pin
+ * @param gpio puerto de la salida digital
+ * @param bit pin de la salida digital
  * @return digital_output_t
  */
-digital_output_t DigitalOutput_Create(uint8_t port, uint8_t pin);
+digital_output_t DigitalOutput_Create(uint8_t gpio, uint8_t bit);
 
 /**
  * @brief
@@ -73,10 +87,31 @@ void DigitalOutput_Deactivate(digital_output_t self);
  */
 void DigitalOutput_Toggle(digital_output_t self);
 
+/**
+ * @brief funcion para crear una entrada digital.
+ *
+ * @param gpio
+ * @param bit
+ * @param inverted
+ * @note Si inverted es verdadero, la entrada digital se considera activa cuando el pin es bajo.
+ * @note Si inverted es falso, la entrada digital se considera activa cuando el pin es alto.
+ * @return digital_input_t
+ */
+
+digital_input_t DigitalInput_Create(uint8_t gpio, uint8_t bit, bool inverted);
+
+bool DigitalInput_GetIsActive(digital_input_t input);
+
+digital_state_t Digital_WasChanged(digital_input_t self);
+
+bool Digital_WasActivated(digital_input_t self);
+
+bool Digitalt_WasDeactivated(digital_input_t self);
+
 /* === End of conditional blocks =================================================================================== */
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif /* DIGITAL_H_ */
+#endif /**  DIGITAL_H_ */

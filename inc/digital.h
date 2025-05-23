@@ -69,21 +69,25 @@ typedef struct digital_input_s * digital_input_t;
 digital_output_t DigitalOutput_Create(uint8_t gpio, uint8_t bit);
 
 /**
- * @brief
- * @param self
+ * @brief Funcion para activar la salida digital.
+ * @param self puntero a la instancia de la salida digital devuelta por la funcion DigitalOutput_Create
+ * @note Esta funcion activa la salida digital. Si la salida digital es activa en alto, el pin se pone en alto.
+ * Si la salida digital es activa en bajo, el pin se pone en bajo.
  */
 void DigitalOutput_Activate(digital_output_t self);
 
 /**
- * @brief
- * @param self
+ * @brief Funcion para desactivar la salida digital.
+ * @param self puntero a la instancia de la salida digital devuelta por la funcion DigitalOutput_Create
+ * @note Esta funcion desactiva la salida digital. Si la salida digital es activa en alto, el pin se pone en bajo.
+ * Si la salida digital es activa en bajo, el pin se pone en alto.
  */
 void DigitalOutput_Deactivate(digital_output_t self);
 
 /**
- * @brief
+ * @brief Funcion para alternar el estado de la salida digital.
  *
- * @param self
+ * @param self puntero a la instancia de la salida digital devuelta por la funcion DigitalOutput_Create
  */
 void DigitalOutput_Toggle(digital_output_t self);
 

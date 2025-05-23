@@ -95,16 +95,49 @@ void DigitalOutput_Toggle(digital_output_t self);
  * @param inverted
  * @note Si inverted es verdadero, la entrada digital se considera activa cuando el pin es bajo.
  * @note Si inverted es falso, la entrada digital se considera activa cuando el pin es alto.
- * @return digital_input_t
+ * @return digital_input_t Puntero a la instancia de la entrada digital creada.
  */
 
 digital_input_t DigitalInput_Create(uint8_t gpio, uint8_t bit, bool inverted);
 
+/**
+ * @brief Funcion para leer el estado de la entrada digital.
+ *
+ * @param self puntero a la instancia de la entrada digital devuelta por la funcion DigitalInput_Create
+ * @return bool true si la entrada digital es activa, false si no lo es.
+ */
+
 bool DigitalInput_GetIsActive(digital_input_t input);
 
-digital_state_t Digital_WasChanged(digital_input_t self);
+/**
+ * @brief Indica si la entrada digital ha cambiado de estado.
+ *
+ * @param self puntero a la instancia de la entrada digital devuelta por la funcion DigitalInput_Create
+ * @return enum digital_state_t -1 si la entrada digital ha cambiado de estado a bajo, 1 si ha cambiado a alto, 0 si no ha cambiado.
+ * @note Esta funcion debe ser llamada en cada ciclo de la aplicacion para detectar cambios de estado.
+ */
+
+enum digital_state_e Digital_WasChanged(digital_input_t self);
+
+/**
+ * @brief Indica si la entrada digital ha sido activada.
+ *
+ * devuelve true si la entrada digital ha sido activada, false si no lo ha sido.
+ * 
+ * @param self puntero a la instancia de la entrada digital devuelta por la funcion DigitalInput_Create
+ * @return bool true si la entrada digital ha sido activada, false si no lo ha sido.
+ */
 
 bool Digital_WasActivated(digital_input_t self);
+
+/**
+ * @brief Indica si la entrada digital ha sido desactivada.
+ *
+ * devuelve true si la entrada digital ha sido desactivada, false si no lo ha sido.
+ * 
+ * @param self puntero a la instancia de la entrada digital devuelta por la funcion DigitalInput_Create
+ * @return bool true si la entrada digital ha sido desactivada, false si no lo ha sido.
+ */
 
 bool Digitalt_WasDeactivated(digital_input_t self);
 

@@ -1,4 +1,4 @@
-/********************************************************************************************************************* 
+/*********************************************************************************************************************
  * Facultad de Ciencias Exactas y Tecnología
  * Universidad Nacional de Tucuman
  * Copyright (c) 2025, Esteban Ignacio Lobo Silva <nachosilva04.com>
@@ -101,7 +101,7 @@ digital_input_t DigitalInput_Create(uint8_t gpio, uint8_t bit, bool inverted) {
 }
 
 bool DigitalInput_GetIsActive(digital_input_t self) {
-    bool state = Chip_GPIO_ReadPortBit(LPC_GPIO_PORT, self->port, self->pin) != 0; // llamar a la funcion del fabricante y comparar con 1
+    bool state = Chip_GPIO_ReadPortBit(LPC_GPIO_PORT, self->port, self->pin) !=0;
 
     if (self->inverted) {
         state = !state;

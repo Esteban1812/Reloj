@@ -117,7 +117,8 @@ bool DigitalInput_GetIsActive(digital_input_t input);
  * @brief Indica si la entrada digital ha cambiado de estado.
  *
  * @param self puntero a la instancia de la entrada digital devuelta por la funcion DigitalInput_Create
- * @return enum digital_state_t -1 si la entrada digital ha cambiado de estado a bajo, 1 si ha cambiado a alto, 0 si no ha cambiado.
+ * @return enum digital_state_t -1 si la entrada digital ha cambiado de estado a bajo, 1 si ha cambiado a alto, 0 si no
+ * ha cambiado.
  * @note Esta funcion debe ser llamada en cada ciclo de la aplicacion para detectar cambios de estado.
  */
 
@@ -127,7 +128,7 @@ enum digital_state_e Digital_WasChanged(digital_input_t self);
  * @brief Indica si la entrada digital ha sido activada.
  *
  * devuelve true si la entrada digital ha sido activada, false si no lo ha sido.
- * 
+ *
  * @param self puntero a la instancia de la entrada digital devuelta por la funcion DigitalInput_Create
  * @return bool true si la entrada digital ha sido activada, false si no lo ha sido.
  */
@@ -138,7 +139,7 @@ bool Digital_WasActivated(digital_input_t self);
  * @brief Indica si la entrada digital ha sido desactivada.
  *
  * devuelve true si la entrada digital ha sido desactivada, false si no lo ha sido.
- * 
+ *
  * @param self puntero a la instancia de la entrada digital devuelta por la funcion DigitalInput_Create
  * @return bool true si la entrada digital ha sido desactivada, false si no lo ha sido.
  */

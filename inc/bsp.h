@@ -46,11 +46,11 @@ extern "C" {
 
 //! Estructura que representa las entradas y salidas digitales de la placa.
 
-typedef struct Board_s{
+typedef struct Board_s {
     digital_output_t led_green;
     digital_output_t led_red;
     digital_output_t led_blue;
-    digital_output_t led_yellow; 
+    digital_output_t led_yellow;
 
     digital_input_t tec_1;
     digital_input_t tec_2;
@@ -70,7 +70,6 @@ typedef struct Board_s{
  */
 
 Board_t Board_Create(void);
-
 
 /* === End of conditional blocks =================================================================================== */
 

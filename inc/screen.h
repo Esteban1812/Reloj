@@ -1,10 +1,11 @@
 /*********************************************************************************************************************
-Facultad de Ciencias Exactas y Tecnología
+ * Facultad de Ciencias Exactas y Tecnología
  * Universidad Nacional de Tucuman
  * Copyright (c) 2025, Esteban Ignacio Lobo Silva <nachosilva04.com>
  * Copyright (c) 2025, Laboratorio de Electronica IV, Universidad Nacional de Tucumán, Argentina
+ * 
 
- Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
 documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
 rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit
 persons to whom the Software is furnished to do so, subject to the following conditions:
@@ -20,19 +21,18 @@ OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 SPDX-License-Identifier: MIT
 *********************************************************************************************************************/
 
-#ifndef BSP_H_
-#define BSP_H_
+#ifndef SCREEN_H_
+#define SCREEN_H_
 
-/** @file bsp.h
- ** @brief Declaraciones del módulo BOARD para la gestión de entradas y salidas digitales.
+/** @file screen.h
+ ** @brief Declaraciones del módulo para la gestión de euna pantalla de 7 segmentos 4 digitos multiplexada.
+ **
  **/
 
 /* === Headers files inclusions ==================================================================================== */
 
-#include "digital.h"
-#include <stdbool.h>
 #include <stdint.h>
-#include "edu-ciaa.h"
+#include <stdbool.h>
 
 /* === Header for C++ compatibility ================================================================================ */
 
@@ -42,36 +42,38 @@ extern "C" {
 
 /* === Public macros definitions =================================================================================== */
 
-#include "digital.h"
-#include "screen.h"
+#define SEGMENT_A (1 << 0)
+#define SEGMENT_B (1 << 1)
+#define SEGMENT_C (1 << 2)
+#define SEGMENT_D (1 << 3)
+#define SEGMENT_E (1 << 4)
+#define SEGMENT_F (1 << 5)
+#define SEGMENT_G (1 << 6)
+#define SEGMENT_P (1 << 7)
 
 /* === Public data type declarations =============================================================================== */
 
-//! Estructura que representa las entradas y salidas digitales de la placa.
+typedef struct screen_s *screen_t;
 
-typedef struct Board_s {
-    digital_output_t buzzer;
-    digital_input_t set_time;
-    digital_input_t set_alarm;
-    digital_input_t increment;
-    digital_input_t decrement;
-    digital_input_t accept;
-    digital_input_t cancel;
-    screen_t screen;
-} const * Board_t;
+typedef void (*digits_turn_off_t)(void);
+typedef void (*segments_update_t)(uint8_t value);
+typedef void (*digits_turn_on_t)(uint8_t digit);
+
+typedef struct screen_driver_s{
+    digits_turn_off_t DigitsTurnOff;
+    segments_update_t SegmentsUpdate;
+    digits_turn_on_t DigitsTurnOn;
+} const * screen_driver_t;
 
 /* === Public variable declarations ================================================================================ */
 
 /* === Public function declarations ================================================================================ */
 
-/**
- * @brief Inicializa (crea) la placa.
- *
- * @return Board_t Puntero a la instancia de la placa creada.
- * @note Esta funcion debe ser llamada una sola vez al inicio de la aplicacion.
- */
+screen_t ScreenCreate(uint8_t digits, screen_driver_t driver);
 
-Board_t Board_Create(void);
+void ScreenWriteBCD(screen_t screen, uint8_t value[], uint8_t size);
+
+void ScreenRefresh(screen_t screen);
 
 /* === End of conditional blocks =================================================================================== */
 
@@ -79,4 +81,4 @@ Board_t Board_Create(void);
 }
 #endif
 
-#endif /* BSP_H_ */
+#endif /**  SCREEN_H_ */

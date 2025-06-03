@@ -40,9 +40,6 @@
 
 /* === Headers files inclusions =============================================================== */
 
-#include "chip.h"
-#include "digital.h"
-#include "edu-ciaa.h"
 #include <stdbool.h>
 #include "bsp.h"
 
@@ -64,34 +61,37 @@
 
 int main(void) {
     int divisor = 0;
+    uint8_t value[4] = {1, 2, 3, 4};
 
     Board_t board = Board_Create();
 
+    ScreenWriteBCD(board->screen, value, 4);
+
     while (true) {
-        if (DigitalInput_GetIsActive(board->tec_1)) {
-            DigitalOutput_Activate(board->led_blue);
-        } else {
-            DigitalOutput_Deactivate(board->led_blue);
-        }
+        /* if (DigitalInput_GetIsActive(board->tec_1)) {
+             DigitalOutput_Activate(board->led_blue);
+         } else {
+             DigitalOutput_Deactivate(board->led_blue);
+         }
 
-        if (Digital_WasActivated(board->tec_2)) {
-            DigitalOutput_Toggle(board->led_red);
-        }
+         if (Digital_WasActivated(board->tec_2)) {
+             DigitalOutput_Toggle(board->led_red);
+         }
 
-        if (Digital_WasActivated(board->tec_3)) {
-            DigitalOutput_Activate(board->led_yellow);
-        }
-        if (Digital_WasActivated(board->tec_4)) {
-            DigitalOutput_Deactivate(board->led_yellow);
-        }
-
+         if (Digital_WasActivated(board->tec_3)) {
+             DigitalOutput_Activate(board->led_yellow);
+         }
+         if (Digital_WasActivated(board->tec_4)) {
+             DigitalOutput_Deactivate(board->led_yellow);
+         }
+ */
         divisor++;
         if (divisor == 5) {
             divisor = 0;
-            DigitalOutput_Toggle(board->led_green);
+            // DigitalOutput_Toggle(board->buzzer);
         }
-
-        for (int index = 0; index < 100; index++) {
+        ScreenRefresh(board->screen);
+        for (int i = 0; i < 100; i++) {
             for (int delay = 0; delay < 25000; delay++) {
                 __asm("NOP");
             }

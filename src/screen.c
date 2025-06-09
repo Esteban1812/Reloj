@@ -114,7 +114,9 @@ void ScreenRefresh(screen_t self) {
             self->flashing_count = (self->flashing_count + 1) % (self->flashing_frequency);
         }
         if (self->flashing_count < (self->flashing_frequency / 2)) {
-            segments = 0; // Apagar segmentos si el contador de parpadeo esta en la primera mitad del ciclo
+            if((self->current_digit >= self->flashing_from) && (self->current_digit <= self->flashing_to)) {
+                segments = 0; // Apagar segmentos si el contador de parpadeo esta en la primera mitad del ciclo
+            }
         }
     }
 
@@ -129,8 +131,8 @@ int DisplayFlashDigits(screen_t self, uint8_t from, uint8_t to, uint16_t divisor
     } else if (!self) {
         result = -1;
     } else {
-        self->flashing_from = from;
-        self->flashing_to = to;
+        self->flashing_from = from-1;
+        self->flashing_to = to-1;
         self->flashing_frequency = 2 * divisor; // Multiplicamos por 2 para tener en cuenta el tiempo de encendido y apagado
         self->flashing_count = 0;
     }

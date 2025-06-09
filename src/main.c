@@ -66,8 +66,10 @@ int main(void) {
     Board_t board = Board_Create();
 
     ScreenWriteBCD(board->screen, value, 4);
+    DisplayFlashDigits(board->screen, 2, 3, 50);
 
     while (true) {
+
         /* if (DigitalInput_GetIsActive(board->tec_1)) {
              DigitalOutput_Activate(board->led_blue);
          } else {
@@ -85,16 +87,18 @@ int main(void) {
              DigitalOutput_Deactivate(board->led_yellow);
          }
  */
+
+
+
         divisor++;
         if (divisor == 5) {
             divisor = 0;
             // DigitalOutput_Toggle(board->buzzer);
         }
         ScreenRefresh(board->screen);
-        for (int i = 0; i < 100; i++) {
-            for (int delay = 0; delay < 25000; delay++) {
+        
+        for (int delay = 0; delay < 25000; delay++) {
                 __asm("NOP");
-            }
         }
     }
 }

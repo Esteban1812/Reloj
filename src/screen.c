@@ -46,6 +46,10 @@ struct screen_s {
     uint8_t value[SCREEN_MAX_DIGITS]; // valores a mostrar en la pantalla
     uint8_t current_digit;            // digito actual que se esta mostrando
     screen_driver_t driver;           // puntero a la estructura de driver de pantalla
+    uint8_t flashing_from;            // rango de digitos a parpadear
+    uint8_t flashing_to;              // rango de digitos a parpadear
+    uint8_t flashing_count;           // contador de parpadeo
+    uint16_t flashing_frequency;      // frecuencia de parpadeo en milisegundos
 };
 
 /* === Private function declarations =============================================================================== */
@@ -81,12 +85,14 @@ screen_t ScreenCreate(uint8_t digits, screen_driver_t driver) {
         self->digits = digits;
         self->driver = driver;
         self->current_digit = 0;
+        self->flashing_count = 0;
+        self->flashing_frequency = 0;
     }
     return self;
 }
 
 void ScreenWriteBCD(screen_t screen, uint8_t value[], uint8_t size) {
-    memset(screen->value, 0, sizeof(screen->value)); 
+    memset(screen->value, 0, sizeof(screen->value));
     if (size > screen->digits) {
         size = screen->digits;
     }
@@ -96,10 +102,40 @@ void ScreenWriteBCD(screen_t screen, uint8_t value[], uint8_t size) {
 }
 
 void ScreenRefresh(screen_t self) {
+    uint8_t segments;
+
     self->driver->DigitsTurnOff();
     self->current_digit = (self->current_digit + 1) % self->digits;
-    self->driver->SegmentsUpdate(self->value[self->current_digit]);
+    
+    segments = self->value[self->current_digit];
+
+    if (self->flashing_frequency != 0) {
+        if (self->current_digit == 0) {
+            self->flashing_count = (self->flashing_count + 1) % (self->flashing_frequency);
+        }
+        if (self->flashing_count < (self->flashing_frequency / 2)) {
+            segments = 0; // Apagar segmentos si el contador de parpadeo esta en la primera mitad del ciclo
+        }
+    }
+
+    self->driver->SegmentsUpdate(segments);
     self->driver->DigitsTurnOn(self->current_digit);
+}
+
+int DisplayFlashDigits(screen_t self, uint8_t from, uint8_t to, uint16_t divisor) {
+    int result = 0;
+    if ((from > to) || (from >= SCREEN_MAX_DIGITS) || (to >= SCREEN_MAX_DIGITS)) {
+        result = -1;
+    } else if (!self) {
+        result = -1;
+    } else {
+        self->flashing_from = from;
+        self->flashing_to = to;
+        self->flashing_frequency = 2 * divisor; // Multiplicamos por 2 para tener en cuenta el tiempo de encendido y apagado
+        self->flashing_count = 0;
+    }
+
+    return result;
 }
 
 /* === End of documentation ======================================================================================== */

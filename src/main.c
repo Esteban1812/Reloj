@@ -66,7 +66,13 @@ int main(void) {
     Board_t board = Board_Create();
 
     ScreenWriteBCD(board->screen, value, 4);
-    DisplayFlashDigits(board->screen, 3, 4, 50);
+    //DisplayFlashDigits(board->screen, 1, 2, 50);
+    
+    ScreenSetPoint(board->screen, 4, false);
+    ScreenSetPoint(board->screen, 3, false);
+    ScreenSetPoint(board->screen, 2, true);
+    ScreenSetPoint(board->screen, 1, false);
+    DisplayFlashPoints(board->screen, 1, 4, 50);
 
     while (true) {
 

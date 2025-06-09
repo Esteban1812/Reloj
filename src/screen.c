@@ -50,6 +50,10 @@ struct screen_s {
     uint8_t flashing_to;              // rango de digitos a parpadear
     uint8_t flashing_count;           // contador de parpadeo
     uint16_t flashing_frequency;      // frecuencia de parpadeo en milisegundos
+    uint8_t flashing_point_from;    // punto decimal del primer digito a parpadear
+    uint8_t flashing_point_to;  // punto decimal del ultimo digito a parpadear
+    //bool flashing_point_enable; // habilita el punto decimal en los digitos que parpadean
+
 };
 
 /* === Private function declarations =============================================================================== */
@@ -75,6 +79,7 @@ static const uint8_t IMAGES[10] = {
 
 /* === Public function implementation ============================================================================== */
 
+
 screen_t ScreenCreate(uint8_t digits, screen_driver_t driver) {
     screen_t self = malloc(sizeof(struct screen_s));
 
@@ -87,9 +92,12 @@ screen_t ScreenCreate(uint8_t digits, screen_driver_t driver) {
         self->current_digit = 0;
         self->flashing_count = 0;
         self->flashing_frequency = 0;
+        //self->flashing_point_enable = false;
+
     }
     return self;
 }
+
 
 void ScreenWriteBCD(screen_t screen, uint8_t value[], uint8_t size) {
     memset(screen->value, 0, sizeof(screen->value));
@@ -101,21 +109,34 @@ void ScreenWriteBCD(screen_t screen, uint8_t value[], uint8_t size) {
     }
 }
 
+
 void ScreenRefresh(screen_t self) {
     uint8_t segments;
 
     self->driver->DigitsTurnOff();
     self->current_digit = (self->current_digit + 1) % self->digits;
-    
+
     segments = self->value[self->current_digit];
 
+    // Si hay parpadeo activo para dígitos o puntos
     if (self->flashing_frequency != 0) {
         if (self->current_digit == 0) {
             self->flashing_count = (self->flashing_count + 1) % (self->flashing_frequency);
         }
+
+        // Primera mitad del ciclo: parpadeo activo
         if (self->flashing_count < (self->flashing_frequency / 2)) {
-            if((self->current_digit >= self->flashing_from) && (self->current_digit <= self->flashing_to)) {
-                segments = 0; // Apagar segmentos si el contador de parpadeo esta en la primera mitad del ciclo
+
+            // Apaga segmentos si el dígito está en rango
+            if ((self->current_digit >= self->flashing_from) &&
+                (self->current_digit <= self->flashing_to)) {
+                segments = 0;
+            }
+
+            // Apaga sólo el punto decimal si está habilitado y en rango
+            if ((self->current_digit >= self->flashing_point_from) &&
+                (self->current_digit <= self->flashing_point_to)) {
+                segments &= ~SEGMENT_P;
             }
         }
     }
@@ -124,6 +145,7 @@ void ScreenRefresh(screen_t self) {
     self->driver->DigitsTurnOn(self->current_digit);
 }
 
+
 int DisplayFlashDigits(screen_t self, uint8_t from, uint8_t to, uint16_t divisor) {
     int result = 0;
     if ((from > to) || (from >= SCREEN_MAX_DIGITS) || (to >= SCREEN_MAX_DIGITS)) {
@@ -131,13 +153,42 @@ int DisplayFlashDigits(screen_t self, uint8_t from, uint8_t to, uint16_t divisor
     } else if (!self) {
         result = -1;
     } else {
-        self->flashing_from = from-1;
-        self->flashing_to = to-1;
+        self->flashing_from = from;
+        self->flashing_to = to;
         self->flashing_frequency = 2 * divisor; // Multiplicamos por 2 para tener en cuenta el tiempo de encendido y apagado
         self->flashing_count = 0;
     }
 
     return result;
 }
+
+int DisplayFlashPoints(screen_t self, uint8_t from, uint8_t to, uint16_t divisor) {
+    int result = 0;
+    if ((from > to) || (from >= SCREEN_MAX_DIGITS) || (to >= SCREEN_MAX_DIGITS)) {
+        result = -1;
+    } else if (!self) {
+        result = -1;
+    } else {
+        self->flashing_point_from = from-1;
+        self->flashing_point_to = to-1;
+        self->flashing_frequency = 2 * divisor;
+        self->flashing_count = 0;
+    }
+
+    return result;
+}
+
+void ScreenSetPoint(screen_t screen, uint8_t digit, bool state) {
+    
+    digit = digit-1; // Ajusta el digito para que el digito 1 sea el 0 en el array
+    if ((screen != NULL) && (digit < screen->digits)) {
+        if (state) {
+            screen->value[digit] |= SEGMENT_P;
+        } else {
+            screen->value[digit] &= ~SEGMENT_P;
+        }
+    }
+}
+
 
 /* === End of documentation ======================================================================================== */

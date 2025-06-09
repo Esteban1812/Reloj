@@ -52,13 +52,14 @@ extern "C" {
 #define SEGMENT_P (1 << 7)
 
 /* === Public data type declarations =============================================================================== */
-
+/** Estructura que representa una pantalla de 7 segmentos multiplexada. */
 typedef struct screen_s *screen_t;
 
 typedef void (*digits_turn_off_t)(void);
 typedef void (*segments_update_t)(uint8_t value);
 typedef void (*digits_turn_on_t)(uint8_t digit);
-
+// Estructura que representa el driver de la pantalla de 7 segmentos multiplexada.
+// Contiene punteros a las funciones que manejan los digitos y segmentos de la pantalla.
 typedef struct screen_driver_s{
     digits_turn_off_t DigitsTurnOff;
     segments_update_t SegmentsUpdate;
@@ -69,10 +70,33 @@ typedef struct screen_driver_s{
 
 /* === Public function declarations ================================================================================ */
 
+/**
+ * @brief Crea una pantalla de 7 segmentos multiplexada.
+ *
+ * @param digits Numero de digitos de la pantalla (maximo 8).
+ * @param driver Puntero a la estructura de driver de pantalla.
+ * @return screen_t Puntero a la instancia de la pantalla creada.
+ * @note Si el numero de digitos es mayor que 8, se limita a 8.
+ */
 screen_t ScreenCreate(uint8_t digits, screen_driver_t driver);
 
+/**
+ * @brief Escribe un valor en formato BCD en la pantalla.
+ *
+ * @param screen Puntero al objeto pantalla.
+ * @param value Vector de valores BCD a mostrar en la pantalla, cada valor debe estar entre 0 y 9.
+ * @param size Tamaño del vector de valores BCD a mostrar en la pantalla.
+ * @note Si el tamaño es mayor que el numero de digitos de la pantalla, se limita al numero de digitos.
+ */
 void ScreenWriteBCD(screen_t screen, uint8_t value[], uint8_t size);
 
+/**
+ * @brief Actualiza la pantalla mostrando el digito actual.
+ *
+ * Esta funcion se debe llamar periodicamente para actualizar la pantalla.
+ *
+ * @param screen Puntero al objeto pantalla.
+ */
 void ScreenRefresh(screen_t screen);
 
 /**
@@ -85,9 +109,26 @@ void ScreenRefresh(screen_t screen);
  * @note Si from es mayor que to, no se hace nada.
  * @param frecuency factor de division de la frecuencia de refresco para el parpadeo.
  */
-
 int DisplayFlashDigits(screen_t display, uint8_t from, uint8_t to, uint16_t divisor);
 
+/**
+ * @brief Función para hacer parpadear los puntos de los dígitos de la pantalla.
+ *
+ * @param display puntero al descriptor de la pantalla
+ * @param from posicion del primer punto a parpadear
+ * @param to posicion del último punto a parpadear
+ * @param divisor factor de división de la frecuencia de refresco para el parpadeo.
+ */
+int DisplayFlashPoints(screen_t display, uint8_t from, uint8_t to, uint16_t divisor);
+
+/**
+ * @brief Enciende o apaga el punto decimal de un dígito específico.
+ *
+ * @param screen Puntero al objeto pantalla.
+ * @param digit Índice del dígito (0 a N-1) cuyo punto se quiere modificar.
+ * @param state true para encender el punto, false para apagarlo.
+ */
+void ScreenSetPoint(screen_t screen, uint8_t digit, bool state);
 
 /* === End of conditional blocks =================================================================================== */
 

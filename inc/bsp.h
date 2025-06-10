@@ -32,7 +32,6 @@ SPDX-License-Identifier: MIT
 #include "digital.h"
 #include <stdbool.h>
 #include <stdint.h>
-#include "edu-ciaa.h"
 
 /* === Header for C++ compatibility ================================================================================ */
 
@@ -51,13 +50,17 @@ extern "C" {
 
 typedef struct Board_s {
     digital_output_t buzzer;
-    digital_input_t set_time;
-    digital_input_t set_alarm;
-    digital_input_t increment;
-    digital_input_t decrement;
-    digital_input_t accept;
-    digital_input_t cancel;
-    screen_t screen;
+    digital_output_t red_led;
+    digital_output_t green_led;
+    digital_output_t blue_led;
+
+    digital_input_t set_time;  // Tecla F4
+    digital_input_t set_alarm; // Tecla F3
+    digital_input_t decrement; // Tecla F2
+    digital_input_t increment; // Tecla F1
+    digital_input_t accept;    // Tecla de aceptar
+    digital_input_t cancel;    // Tecla de cancelar
+    screen_t screen;           // Puntero a la pantalla
 } const * Board_t;
 
 /* === Public variable declarations ================================================================================ */

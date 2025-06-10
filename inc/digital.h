@@ -65,9 +65,8 @@ typedef struct display_s * display_t;
 
 /**
  * @brief Funcion para crear una salida digital.
- * Esta funcion crea un objeto de la clase salida digital. La locacion de memoria depende
- * de la @ref configuracion de la bibloteca "config.h".
- *
+ * Esta funcion crea un objeto de la clase salida digital.
+ * 
  * @param gpio puerto de la salida digital
  * @param bit pin de la salida digital
  * @return digital_output_t

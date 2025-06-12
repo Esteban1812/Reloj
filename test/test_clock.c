@@ -27,12 +27,17 @@ SPDX-License-Identifier: MIT
 /**
  * Pruebas del reloj:
 
-‣ Al inicializar el reloj está en 00:00 y con hora invalida.
-‣ Al ajustar la hora el reloj queda en hora y es válida.
-‣ Después de n ciclos de reloj la hora avanza un segundo, diez segundos, un minutos, diez minutos, una hora, diez horas
-y un día completo. ‣ Fijar la hora de la alarma y consultarla. ‣ Fijar la alarma y avanzar el reloj para que suene. ‣
-Fijar la alarma, deshabilitarla y avanzar el reloj para no suene. ‣ Hacer sonar la alarma y posponerla. ‣ Hacer sonar la
-alarma y cancelarla hasta el otro dia.
+- Al inicializar el reloj está en 00:00 y con hora invalida.
+- Al ajustar la hora el reloj queda en hora y es válida.
+- Después de n ciclos de reloj la hora avanza un segundo, diez segundos, un minutos, diez minutos, una hora, diez horas
+y un día completo.
+- Fijar la hora de la alarma y consultarla.
+- Fijar la alarma y avanzar el reloj para que suene.
+- Fijar la alarma, deshabilitarla y avanzar el reloj para no suene.
+- Hacer sonar la alarma y posponerla.
+- Hacer sonar la alarma y cancelarla hasta el otro dia.
+- Probar get_time con NULL como argumento.
+- Tratar de ajustar la hora del reloj con valores invalidos y verificar que no pasa la prueba.
  *
  */
 
@@ -69,4 +74,19 @@ void test_set_up_with_invalid_time(void) {
     TEST_ASSERT_FALSE(ClockGetTime(clock, &current_time));
     TEST_ASSERT_EACH_EQUAL_UINT8(0, current_time.bcd, 6);
 }
+
+/**
+ * @brief Al ajustar la hora del reloj con valores correctos, queda en hora y es válida.
+ * primero creo una hora valida(con valores correctos), luego la ajusto y verifico que quede en 00:00:00
+ */
+
+void test_set_up_and_adjust_with_valid_time(void) {
+    clock_time_t new_time = {.time = {.seconds = {2, 5}, .minutes = {4, 7}, .hours = {1, 6}}};
+    clock_time_t current_time = {0};
+    clock_t clock = Clock_Create();
+    TEST_ASSERT_TRUE(ClockSetTime(clock, &new_time));
+    TEST_ASSERT_TRUE(ClockGetTime(clock, &current_time));
+    TEST_ASSERT_EQUAL_UINT8_ARRAY(new_time.bcd, current_time.bcd, 6);
+}
+
 /* === End of documentation ======================================================================================== */

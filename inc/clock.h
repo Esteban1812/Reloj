@@ -78,7 +78,17 @@ clock_t Clock_Create(void);
  * @return bool true si la hora se ajustó correctamente, false si no.
  */
 
-bool ClockGetTime(clock_t self, clock_time_t *result);
+bool ClockGetTime(clock_t self, clock_time_t * result);
+
+/**
+ * @brief Ajusta la hora del reloj a un nuevo valor.
+ *
+ * @param self Puntero a la instancia del reloj devuelta por la función Clock_Create.
+ * @param new_time Estructura que contiene la nueva hora a establecer.
+ * @return bool true si la hora se ajustó correctamente, false si no.
+ */
+
+bool ClockSetTime(clock_t self, const clock_time_t * new_time);
 
 /* === End of conditional blocks =================================================================================== */
 

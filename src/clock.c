@@ -34,6 +34,11 @@ SPDX-License-Identifier: MIT
 
 /* === Private data type declarations ============================================================================== */
 
+struct clock_s {
+    clock_time_t current_time;
+    bool valid;
+};
+
 /* === Private function declarations =============================================================================== */
 
 /* === Private variable definitions ================================================================================ */
@@ -44,15 +49,23 @@ SPDX-License-Identifier: MIT
 
 /* === Public function implementation ============================================================================== */
 
-clock_t Clock_Create(void){
-    return NULL; 
+clock_t Clock_Create(void) {
+    static struct clock_s self[1];
+    memset(self, 0, sizeof(struct clock_s)); // Initialize the clock structure to zero
+    self->valid = false;
+    return self;
 }
 
-bool ClockGetTime(clock_t self, clock_time_t *result){
-    (void) self;
-    memset(result, 0, 6);
-    return false; 
+bool ClockGetTime(clock_t self, clock_time_t * result) {
+
+    memcpy(result, &self->current_time, sizeof(clock_time_t));
+    return self->valid;
 }
 
+bool ClockSetTime(clock_t self, const clock_time_t * new_time) {
+    self->valid = true;
+    memcpy(&self->current_time, new_time, sizeof(clock_time_t));
+    return self->valid;
+}
 
 /* === End of documentation ======================================================================================== */

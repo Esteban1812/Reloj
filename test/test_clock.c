@@ -27,6 +27,8 @@ SPDX-License-Identifier: MIT
 /**
  * Pruebas del reloj:
 
+- Despues de n ciclos de reloj la hora avanza un segundo, diez segundos, un minuto, diez minutos, una hora, diez horas y
+un día completo.
 - Al inicializar el reloj está en 00:00 y con hora invalida.
 - Al ajustar la hora el reloj queda en hora y es válida.
 - Después de n ciclos de reloj la hora avanza un segundo, diez segundos, un minutos, diez minutos, una hora, diez horas
@@ -38,6 +40,7 @@ y un día completo.
 - Hacer sonar la alarma y cancelarla hasta el otro dia.
 - Probar get_time con NULL como argumento.
 - Tratar de ajustar la hora del reloj con valores invalidos y verificar que no pasa la prueba.
+- Hacer una prueba con frecuencia de reloj deferente a 5
  *
  */
 
@@ -48,6 +51,8 @@ y un día completo.
 
 /* === Macros definitions ========================================================================================== */
 
+#define CLOCK_TICK_PER_SECOND 5 // Definimos la frecuencia del reloj a 5Hz
+
 /* === Private data type declarations ============================================================================== */
 
 /* === Private function declarations =============================================================================== */
@@ -57,6 +62,12 @@ y un día completo.
 /* === Public variable definitions ================================================================================= */
 
 /* === Private function definitions ================================================================================ */
+
+void SimulateSeconds(clock_t clock, uint8_t seconds) {
+    for (uint8_t i = 0; i < CLOCK_TICK_PER_SECOND * seconds; i++) {
+        ClockAdvance(clock);
+    }
+}
 
 /* === Public function implementation ============================================================================== */
 
@@ -86,7 +97,28 @@ void test_set_up_and_adjust_with_valid_time(void) {
     clock_t clock = Clock_Create();
     TEST_ASSERT_TRUE(ClockSetTime(clock, &new_time));
     TEST_ASSERT_TRUE(ClockGetTime(clock, &current_time));
-    TEST_ASSERT_EQUAL_UINT8_ARRAY(new_time.bcd, current_time.bcd, 6);
+    TEST_ASSERT_EQUAL_UINT8_ARRAY(new_time.bcd, current_time.bcd, sizeof(clock_time_t));
 }
 
+/**
+ * @brief Después de n ciclos de reloj la hora avanza un segundo, diez segundos, un minuto, diez minutos, una hora,
+ * diez horas y un día completo.
+ *
+ */
+/**
+void test_clock_advance_one_second(void) {
+    clock_time_t current_time = {0};
+    clock_time_t espected_value = {.time = {.seconds = {1, 0}, .minutes = {0, 0}, .hours = {0, 0}}};
+
+    clock_t clock = Clock_Create(CLOCK_TICK_PER_SECOND); // Crear el reloj con una frecuencia de 5Hz
+
+    // Inicializar el reloj a 00:00:00
+    ClockSetTime(clock, &(clock_time_t){0});
+
+    SimulateSeconds(clock, 1); // simulo el paso de un segundo
+    TClockGetTime(clock, &current_time);
+    TEST_ASSERT_EQUAL_UINT8_ARRAY(espected_value, current_time);
+
+    // Avanzar un segundo   
+} */
 /* === End of documentation ======================================================================================== */

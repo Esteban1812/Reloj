@@ -35,6 +35,7 @@ SPDX-License-Identifier: MIT
 /* === Private data type declarations ============================================================================== */
 
 struct clock_s {
+    uint16_t clock_ticks;
     clock_time_t current_time;
     bool valid;
 };
@@ -49,7 +50,7 @@ struct clock_s {
 
 /* === Public function implementation ============================================================================== */
 
-clock_t Clock_Create(uint16_t tick_per_second){
+clock_t Clock_Create(uint16_t tick_per_second) {
     (void)tick_per_second; // Suppress unused parameter warning, as this is a placeholder for future use
     static struct clock_s self[1];
     memset(self, 0, sizeof(struct clock_s)); // Initialize the clock structure to zero
@@ -69,7 +70,35 @@ bool ClockSetTime(clock_t self, const clock_time_t * new_time) {
     return self->valid;
 }
 
-void ClockNewTick(clock_t self){
-    self->current_time.time.seconds[0]= 1;
+void ClockNewTick(clock_t self) {
+    self->clock_ticks++;
+    if (self->clock_ticks == 5) {             // Assuming 5 ticks per second
+        self->clock_ticks = 0;                // Reset ticks after 5 ticks (1 second)
+        self->current_time.time.seconds[0]++; // Increment seconds
+        if (self->current_time.time.seconds[0] > 9) {
+            self->current_time.time.seconds[0] = 0; // Reset seconds to 0
+            self->current_time.time.seconds[1]++;   // Increment tens of seconds
+            if (self->current_time.time.seconds[1] > 5) {
+                self->current_time.time.seconds[1] = 0; // Reset tens of seconds to 0
+                self->current_time.time.minutes[0]++;   // Increment minutes
+                if (self->current_time.time.minutes[0] > 9) {
+                    self->current_time.time.minutes[0] = 0; // Reset minutes to 0
+                    self->current_time.time.minutes[1]++;   // Increment tens of minutes
+                    if (self->current_time.time.minutes[1] > 5) {
+                        self->current_time.time.minutes[1] = 0; // Reset tens of minutes to 0
+                        self->current_time.time.hours[0]++;     // Increment hours
+                        if (self->current_time.time.hours[0] > 9) {
+                            self->current_time.time.hours[0] = 0; // Reset hours to 0
+                            self->current_time.time.hours[1]++;   // Increment tens of hours
+                            if (self->current_time.time.hours[1] > 2 ||
+                                (self->current_time.time.hours[1] == 2 && self->current_time.time.hours[0] > 3)) {
+                                self->current_time.time.hours[1] = 0; // Reset tens of hours to 0
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
 }
 /* === End of documentation ======================================================================================== */

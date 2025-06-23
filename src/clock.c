@@ -49,7 +49,8 @@ struct clock_s {
 
 /* === Public function implementation ============================================================================== */
 
-clock_t Clock_Create(void) {
+clock_t Clock_Create(uint16_t tick_per_second){
+    (void)tick_per_second; // Suppress unused parameter warning, as this is a placeholder for future use
     static struct clock_s self[1];
     memset(self, 0, sizeof(struct clock_s)); // Initialize the clock structure to zero
     self->valid = false;
@@ -68,4 +69,7 @@ bool ClockSetTime(clock_t self, const clock_time_t * new_time) {
     return self->valid;
 }
 
+void ClockNewTick(clock_t self){
+    self->current_time.time.seconds[0]= 1;
+}
 /* === End of documentation ======================================================================================== */

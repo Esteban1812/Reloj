@@ -65,7 +65,7 @@ y un día completo.
 
 void SimulateSeconds(clock_t clock, uint8_t seconds) {
     for (uint8_t i = 0; i < CLOCK_TICK_PER_SECOND * seconds; i++) {
-        ClockAdvance(clock);
+        ClockNewTick(clock);
     }
 }
 
@@ -81,7 +81,7 @@ void test_set_up_with_invalid_time(void) {
         // coloco una Hora invalida para hacer que la prueba falle, y no pase de suerte como me paso
     };
 
-    clock_t clock = Clock_Create();
+    clock_t clock = Clock_Create(CLOCK_TICK_PER_SECOND);
     TEST_ASSERT_FALSE(ClockGetTime(clock, &current_time));
     TEST_ASSERT_EACH_EQUAL_UINT8(0, current_time.bcd, 6);
 }
@@ -94,10 +94,10 @@ void test_set_up_with_invalid_time(void) {
 void test_set_up_and_adjust_with_valid_time(void) {
     clock_time_t new_time = {.time = {.seconds = {2, 5}, .minutes = {4, 7}, .hours = {1, 6}}};
     clock_time_t current_time = {0};
-    clock_t clock = Clock_Create();
+    clock_t clock = Clock_Create(CLOCK_TICK_PER_SECOND);
     TEST_ASSERT_TRUE(ClockSetTime(clock, &new_time));
     TEST_ASSERT_TRUE(ClockGetTime(clock, &current_time));
-    TEST_ASSERT_EQUAL_UINT8_ARRAY(new_time.bcd, current_time.bcd, sizeof(clock_time_t));
+    TEST_ASSERT_EQUAL_UINT8_ARRAY(new_time.bcd, current_time.bcd, 6);
 }
 
 /**
@@ -105,10 +105,10 @@ void test_set_up_and_adjust_with_valid_time(void) {
  * diez horas y un día completo.
  *
  */
-/**
+
 void test_clock_advance_one_second(void) {
     clock_time_t current_time = {0};
-    clock_time_t espected_value = {.time = {.seconds = {1, 0}, .minutes = {0, 0}, .hours = {0, 0}}};
+    static const clock_time_t espected_value = {.time = {.seconds = {1, 0}, .minutes = {0, 0}, .hours = {0, 0}}};
 
     clock_t clock = Clock_Create(CLOCK_TICK_PER_SECOND); // Crear el reloj con una frecuencia de 5Hz
 
@@ -116,9 +116,9 @@ void test_clock_advance_one_second(void) {
     ClockSetTime(clock, &(clock_time_t){0});
 
     SimulateSeconds(clock, 1); // simulo el paso de un segundo
-    TClockGetTime(clock, &current_time);
-    TEST_ASSERT_EQUAL_UINT8_ARRAY(espected_value, current_time);
+    ClockGetTime(clock, &current_time);
+    TEST_ASSERT_EQUAL_UINT8_ARRAY(espected_value.bcd, current_time.bcd, 6);
 
     // Avanzar un segundo   
-} */
+}
 /* === End of documentation ======================================================================================== */

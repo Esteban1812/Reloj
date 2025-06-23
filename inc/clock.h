@@ -68,7 +68,7 @@ typedef struct clock_s * clock_t;
  * @note Esta función debe ser llamada antes de usar cualquier otra función del reloj.
  */
 
-clock_t Clock_Create(void);
+clock_t Clock_Create(uint16_t tick_per_second);
 
 /**
  * @brief Ajusta la hora del reloj.
@@ -89,6 +89,16 @@ bool ClockGetTime(clock_t self, clock_time_t * result);
  */
 
 bool ClockSetTime(clock_t self, const clock_time_t * new_time);
+
+/**
+ * @brief Avanza el reloj un tick, lo que equivale a un segundo.
+ *
+ * @param self Puntero a la instancia del reloj devuelta por la función Clock_Create.
+ * @note Esta función debe ser llamada periódicamente para simular el avance del tiempo.
+ */
+
+void ClockNewTick(clock_t self);
+
 
 /* === End of conditional blocks =================================================================================== */
 

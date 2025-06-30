@@ -211,4 +211,67 @@ void test_clock_advance_one_day(void) {
     SimulateSeconds(clock, 86400);                       // simulo el paso de 86400 segundos. Un día completo
     TEST_ASSERT_TIME(2, 4, 0, 0, 0, 0, current_time); // Verifico que la hora sea 00:00:00
 }
+
+/**
+ * @brief Probar get_time con NULL como argumento.
+ *
+ * Esta prueba verifica que la función ClockGetTime no se rompa al pasar un puntero nulo.
+ * La función debe devolver false pero NO romper.
+ */
+void test_get_time_with_null_pointer(void) {
+    clock = Clock_Create(CLOCK_TICK_PER_SECOND); 
+
+    // No seteamos la hora, está inválida por defecto
+    bool result = ClockGetTime(clock, NULL);
+
+    // La función debe devolver false pero NO romper
+    TEST_ASSERT_FALSE(result);
+}
+
+/**
+ * @brief Tratar de ajustar la hora del reloj con valores invalidos y verificar que no pasa la prueba.
+ *
+ * Esta prueba verifica que la función ClockSetTime no permita establecer una hora inválida.
+ */
+
+void test_set_time_with_invalid_values(void) {
+    clock_time_t invalid_time = {
+        .time = {
+            .seconds = {8, 7},  // 78
+            .minutes = {5, 6},  // 65
+            .hours = {5, 4}     // 45
+        }
+    }; //defino un tiempo inválido 45:65:78
+
+    clock = Clock_Create(CLOCK_TICK_PER_SECOND);
+    bool result = ClockSetTime(clock, &invalid_time);
+
+    TEST_ASSERT_FALSE(result);
+}
+
+
+/**
+ * @brief Hacer una prueba con frecuencia de reloj diferente a 5.
+ *
+ * Esta prueba verifica que el reloj funcione correctamente con una frecuencia de 10Hz.
+ * Se espera que después de 10 ticks, el reloj avance un segundo.
+ */
+void test_clock_with_different_tick_frequency(void) {
+    // Creo el reloj con frecuencia 10 Hz
+    clock = Clock_Create(10);
+
+    clock_time_t t0 = {0};  // Seteo hora en 00:00:00
+    ClockSetTime(clock, &t0);
+
+    for (int i = 0; i < 10; i++) { // Simulo 10 ticks, debería avanzar 1 segundo
+        ClockNewTick(clock);
+    }
+
+    clock_time_t result;
+    TEST_ASSERT_TRUE(ClockGetTime(clock, &result));
+
+    TEST_ASSERT_EQUAL_UINT8(1, result.bcd[0]); // segundos unidades = 1
+    TEST_ASSERT_EQUAL_UINT8(0, result.bcd[1]); // segundos decenas = 0
+}
+
 /* === End of documentation ========================================================================================*/

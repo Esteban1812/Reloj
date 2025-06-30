@@ -71,11 +71,12 @@ typedef struct clock_s * clock_t;
 clock_t Clock_Create(uint16_t tick_per_second);
 
 /**
- * @brief Ajusta la hora del reloj.
+ * @brief Copia la hora actual (si es válida) en la estructura result.
  *
  * @param self Puntero a la instancia del reloj devuelta por la función Clock_Create.
  * @param current_time Estructura que contiene la hora a ajustar.
- * @return bool true si la hora se ajustó correctamente, false si no.
+ * @return Devuelve true si la hora está “en hora” (o sea, si el reloj fue ajustado con ClockSetTime()).
+ * @return Devuelve false si la hora aún no fue ajustada (es inválida).
  */
 
 bool ClockGetTime(clock_t self, clock_time_t * result);

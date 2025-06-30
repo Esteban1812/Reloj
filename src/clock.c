@@ -38,9 +38,17 @@ struct clock_s {
     uint16_t clock_ticks;
     clock_time_t current_time;
     bool valid;
+    uint16_t ticks_per_second;
 };
 
 /* === Private function declarations =============================================================================== */
+
+/** @brief Verifica si la hora es válida (00:00:00 a 23:59:59).
+ * @param time Puntero a la estructura clock_time_t que contiene la hora a verificar.
+ * @return Devuelve true si la hora es válida, false en caso contrario.
+ */
+
+ static bool ClockIsValidTime(const clock_time_t * time);
 
 /* === Private variable definitions ================================================================================ */
 
@@ -48,23 +56,40 @@ struct clock_s {
 
 /* === Private function definitions ================================================================================ */
 
+static bool ClockIsValidTime(const clock_time_t * time) {
+    if (!time) return false;
+
+    uint8_t s = time->time.seconds[1] * 10 + time->time.seconds[0];
+    uint8_t m = time->time.minutes[1] * 10 + time->time.minutes[0];
+    uint8_t h = time->time.hours[1]   * 10 + time->time.hours[0];
+//Esto reconstruye el número decimal de cada campo y verifica:
+    return (s <= 59 && m <= 59 && h <= 23);
+}
 /* === Public function implementation ============================================================================== */
 
 clock_t Clock_Create(uint16_t tick_per_second) {
-    (void)tick_per_second; // Suppress unused parameter warning, as this is a placeholder for future use
     static struct clock_s self[1];
     memset(self, 0, sizeof(struct clock_s)); // Initialize the clock structure to zero
+    self->ticks_per_second = tick_per_second;
     self->valid = false;
     return self;
 }
 
 bool ClockGetTime(clock_t self, clock_time_t * result) {
 
+    if (!self || !result) {
+        return false;
+    }
+
     memcpy(result, &self->current_time, sizeof(clock_time_t));
     return self->valid;
 }
 
 bool ClockSetTime(clock_t self, const clock_time_t * new_time) {
+    if (!self || !ClockIsValidTime(new_time)) {
+        return false;
+    }
+
     self->valid = true;
     memcpy(&self->current_time, new_time, sizeof(clock_time_t));
     return self->valid;
@@ -72,7 +97,7 @@ bool ClockSetTime(clock_t self, const clock_time_t * new_time) {
 
 void ClockNewTick(clock_t self) {
     self->clock_ticks++;
-    if (self->clock_ticks == 5) {             // Assuming 5 ticks per second
+    if (self->clock_ticks >= self->ticks_per_second) {             // Assuming 5 ticks per second
         self->clock_ticks = 0;                // Reset ticks after 5 ticks (1 second)
         self->current_time.time.seconds[0]++; // Increment seconds
         if (self->current_time.time.seconds[0] > 9) {
@@ -92,8 +117,9 @@ void ClockNewTick(clock_t self) {
                             self->current_time.time.hours[1]++;   // Increment tens of hours
                             if (self->current_time.time.hours[1] > 2 ||
                                 (self->current_time.time.hours[1] == 2 && self->current_time.time.hours[0] > 3)) {
-                                memset(&self->current_time.time, 0, sizeof(self->current_time.time)); // Reset time to 00:00:00
-                                //self->valid = false; // Invalidate the clock time if it exceeds 23:59:59
+                                memset(&self->current_time.time, 0,
+                                       sizeof(self->current_time.time)); // Reset time to 00:00:00
+                                // self->valid = false; // Invalidate the clock time if it exceeds 23:59:59
                             }
                         }
                     }

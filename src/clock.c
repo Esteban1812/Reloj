@@ -35,11 +35,13 @@ SPDX-License-Identifier: MIT
 /* === Private data type declarations ============================================================================== */
 
 struct clock_s {
-    uint16_t clock_ticks;
-    clock_time_t current_time;
-    bool valid;
-    uint16_t ticks_per_second;
-    clock_time_t alarm_time;
+    uint16_t clock_ticks;         // Contador de ticks del reloj, se incrementa cada vez que se llama a ClockNewTick
+    uint16_t ticks_per_second;    // Cantidad de ticks por segundo, por ejemplo 5 para 5Hz
+    clock_time_t current_time;    // Hora actual del reloj
+    clock_time_t alarm_time;      // Hora de la alarma
+    bool alarm_enabled;           // Indica si la alarma está habilitada
+    bool valid;                   // Indica si la hora actual es válida (ha sido ajustada con ClockSetTime)
+    void (*alarm_callback)(void); // Puntero a la función de callback para la alarma
 };
 
 /* === Private function declarations =============================================================================== */
@@ -49,7 +51,7 @@ struct clock_s {
  * @return Devuelve true si la hora es válida, false en caso contrario.
  */
 
- static bool ClockIsValidTime(const clock_time_t * time);
+static bool ClockIsValidTime(const clock_time_t * time);
 
 /* === Private variable definitions ================================================================================ */
 
@@ -58,12 +60,13 @@ struct clock_s {
 /* === Private function definitions ================================================================================ */
 
 static bool ClockIsValidTime(const clock_time_t * time) {
-    if (!time) return false;
+    if (!time)
+        return false;
 
     uint8_t s = time->time.seconds[1] * 10 + time->time.seconds[0];
     uint8_t m = time->time.minutes[1] * 10 + time->time.minutes[0];
-    uint8_t h = time->time.hours[1]   * 10 + time->time.hours[0];
-//Esto reconstruye el número decimal de cada campo y verifica:
+    uint8_t h = time->time.hours[1] * 10 + time->time.hours[0];
+    // Esto reconstruye el número decimal de cada campo y verifica:
     return (s <= 59 && m <= 59 && h <= 23);
 }
 /* === Public function implementation ============================================================================== */
@@ -98,9 +101,9 @@ bool ClockSetTime(clock_t self, const clock_time_t * new_time) {
 
 void ClockNewTick(clock_t self) {
     self->clock_ticks++;
-    if (self->clock_ticks >= self->ticks_per_second) {             // Assuming 5 ticks per second
-        self->clock_ticks = 0;                // Reset ticks after 5 ticks (1 second)
-        self->current_time.time.seconds[0]++; // Increment seconds
+    if (self->clock_ticks >= self->ticks_per_second) { // Assuming 5 ticks per second
+        self->clock_ticks = 0;                         // Reset ticks after 5 ticks (1 second)
+        self->current_time.time.seconds[0]++;          // Increment seconds
         if (self->current_time.time.seconds[0] > 9) {
             self->current_time.time.seconds[0] = 0; // Reset seconds to 0
             self->current_time.time.seconds[1]++;   // Increment tens of seconds
@@ -120,7 +123,7 @@ void ClockNewTick(clock_t self) {
                                 (self->current_time.time.hours[1] == 2 && self->current_time.time.hours[0] > 3)) {
                                 memset(&self->current_time.time, 0,
                                        sizeof(self->current_time.time)); // Reset time to 00:00:00
-                                // self->valid = false; // Invalidate the clock time if it exceeds 23:59:59
+    
                             }
                         }
                     }
@@ -128,15 +131,37 @@ void ClockNewTick(clock_t self) {
             }
         }
     }
+
+    if (self->alarm_enabled &&
+    self->alarm_callback &&
+    memcmp(&self->alarm_time, &self->current_time, sizeof(clock_time_t)) == 0) {
+    self->alarm_callback();
+}
+
 }
 
 void ClockSetAlarm(clock_t self, const clock_time_t * alarm) {
-    if (!self || !alarm) return;
+    if (!self || !alarm)
+        return;
     memcpy(&self->alarm_time, alarm, sizeof(clock_time_t));
 }
 
 void ClockGetAlarm(clock_t self, clock_time_t * alarm) {
-    if (!self || !alarm) return;
+    if (!self || !alarm)
+        return;
     memcpy(alarm, &self->alarm_time, sizeof(clock_time_t));
 }
+
+void ClockEnableAlarm(clock_t self, bool enable) {
+    if (self) {
+        self->alarm_enabled = enable;
+    }
+}
+
+void ClockAttachAlarmCallback(clock_t self, void (*callback)(void)) {
+    if (self) {
+        self->alarm_callback = callback;
+    }
+}
+
 /* === End of documentation ======================================================================================== */

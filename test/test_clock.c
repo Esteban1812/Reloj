@@ -41,7 +41,7 @@ SPDX-License-Identifier: MIT
 -12- Hacer una prueba con frecuencia de reloj deferente a 5
 -13- Fijar la hora de la alarma y consultarla.
 -14- Fijar la alarma y avanzar el reloj para que suene.
--15- Fijar la alarma, deshabilitarla y avanzar el reloj para no suene.
+-15- Fijar la alarma, deshabilitarla y avanzar el reloj para NO suene.
 -16- Hacer sonar la alarma y posponerla.
 -17- Hacer sonar la alarma y cancelarla hasta el otro dia.
 
@@ -73,6 +73,10 @@ SPDX-License-Identifier: MIT
 
 /* === Private variable definitions ================================================================================ */
 
+static bool alarm = false;
+// Variable para indicar si la alarma ha sonado, se usa en el callback de la alarma
+// Se inicializa en false y se cambia a true cuando la alarma suena
+
 /* === Public variable definitions ================================================================================= */
 
 clock_t clock; // Declaramos una variable global de tipo clock_t para el reloj
@@ -83,6 +87,11 @@ static void SimulateSeconds(clock_t clock, uint32_t seconds) {
     for (uint32_t i = 0; i < CLOCK_TICK_PER_SECOND * seconds; i++) {
         ClockNewTick(clock);
     }
+}
+
+
+static void AlarmRinging(void) {
+    alarm = true;
 }
 
 /* === Public function implementation ============================================================================== */
@@ -291,12 +300,90 @@ void test_set_and_get_alarm_time(void) {
 
     clock_time_t result;
 
-    clock = Clock_Create(5);
+    clock = Clock_Create(CLOCK_TICK_PER_SECOND);
     ClockSetAlarm(clock, &alarm);
     ClockGetAlarm(clock, &result);
 
     TEST_ASSERT_EQUAL_UINT8_ARRAY(alarm.bcd, result.bcd, 6);
 }
 
+
+/**
+ * @brief prueba mínima para confirmar que ClockAttachAlarmCallback() realmente ejecuta el callback
+ * 
+ */
+void test_alarm_callback_executes(void) {
+    clock = Clock_Create(CLOCK_TICK_PER_SECOND);
+    alarm = false;
+clock_time_t hora = {.bcd = {0, 0, 0, 0, 0, 0}};
+    ClockAttachAlarmCallback(clock, AlarmRinging);
+    ClockEnableAlarm(clock, true);
+    ClockSetAlarm(clock, &hora);
+    ClockSetTime(clock, &hora);
+
+    SimulateSeconds(clock, 1);
+
+    TEST_ASSERT_TRUE_MESSAGE(alarm, "La alarma no fue ejecutada aunque la hora coincidia"); 
+}
+
+/**
+ * @brief Fijar la alarma y avanzar el reloj para que suene.
+ *
+ * Esta prueba verifica que la alarma suene cuando el tiempo del reloj coincide con la hora de la alarma.
+ */
+
+void test_alarm_sounds_when_time_matches(void) {
+    clock = Clock_Create(CLOCK_TICK_PER_SECOND);
+    ClockAttachAlarmCallback(clock, AlarmRinging);
+
+    clock_time_t alarma = {
+        .time = {
+            .hours = {1, 2},     // 21
+            .minutes = {4, 3},   // 34
+            .seconds = {0, 0}    // 00
+        }
+    };
+
+    clock_time_t inicio = {
+        .time = {
+            .hours = {1, 2},     // 21
+            .minutes = {3, 3},   // 33
+            .seconds = {9, 5}    // 59
+        }
+    };
+
+    ClockSetTime(clock, &inicio);
+    ClockSetAlarm(clock, &alarma);
+    ClockEnableAlarm(clock, true);
+
+    alarm = false;
+
+    // Simular un segundo: pasar de 59 a 00, y minuto de 24 a 25
+    SimulateSeconds(clock, 1);  // 21:34:00
+
+    TEST_ASSERT_TRUE_MESSAGE(alarm, "La alarma no sono cuando debia.");
+}
+
+/**
+ * @brief Fijar la alarma, deshabilitarla y avanzar el reloj para NO suene.
+ *
+ * Esta prueba verifica que la alarma no suene si está deshabilitada, incluso si el tiempo del reloj coincide con la hora de la alarma.
+ */
+
+void test_alarm_does_not_sound_if_disabled(void) {
+    clock = Clock_Create(CLOCK_TICK_PER_SECOND);
+    alarm = false;
+
+    clock_time_t hora = {.bcd = {0, 0, 0, 0, 0, 0}}; // 00:00:00
+
+    ClockAttachAlarmCallback(clock, AlarmRinging);
+    ClockSetAlarm(clock, &hora);
+    ClockEnableAlarm(clock, false);     // Alarma deshabilitada
+    ClockSetTime(clock, &hora);         // Ajustar hora al mismo valor
+
+    SimulateSeconds(clock, 1);          // Avanza a la hora de la alarma
+
+    TEST_ASSERT_FALSE_MESSAGE(alarm, "La alarma sonó aunque estaba deshabilitada");
+}
 
 /* === End of documentation ========================================================================================*/

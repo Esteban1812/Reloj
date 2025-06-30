@@ -117,6 +117,27 @@ void ClockGetAlarm(clock_t self, clock_time_t * alarm);
  */
 
 void ClockSetAlarm(clock_t self, const clock_time_t * alarm);
+
+/**
+ * @brief Habilita o deshabilita la alarma del reloj.
+ *
+ * @param self Puntero a la instancia del reloj devuelta por la función Clock_Create.
+ * @param enable true para habilitar la alarma, false para deshabilitarla.
+ */
+
+void ClockEnableAlarm(clock_t self, bool enable);
+
+/**
+ * @brief Adjunta un callback que se ejecutará cuando la alarma se active.
+ *
+ * @param self Puntero a la instancia del reloj devuelta por la función Clock_Create.
+ * @param callback Puntero a la función que se llamará cuando la alarma se active.
+ * @note El callback debe ser una función sin parámetros y sin valor de retorno.
+ */
+
+void ClockAttachAlarmCallback(clock_t self, void (*callback)(void));
+
+
 /* === End of conditional blocks =================================================================================== */
 
 #ifdef __cplusplus

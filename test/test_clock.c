@@ -40,10 +40,11 @@ SPDX-License-Identifier: MIT
 -11- Tratar de ajustar la hora del reloj con valores invalidos y verificar que no pasa la prueba.
 -12- Hacer una prueba con frecuencia de reloj deferente a 5
 -13- Fijar la hora de la alarma y consultarla.
--14- Fijar la alarma y avanzar el reloj para que suene.
--15- Fijar la alarma, deshabilitarla y avanzar el reloj para NO suene.
--16- Hacer sonar la alarma y posponerla.
--17- Hacer sonar la alarma y cancelarla hasta el otro dia.
+-14- Probar que ClockAttachAlarmCallback() realmente ejecuta el callback.
+-15- Fijar la alarma y avanzar el reloj para que suene.
+-16- Fijar la alarma, deshabilitarla y avanzar el reloj para NO suene.
+-17- Hacer sonar la alarma y posponerla.
+-18- Hacer sonar la alarma y cancelarla hasta el otro dia.
 
  *
  */
@@ -217,7 +218,7 @@ void test_clock_advance_one_day(void) {
     ClockSetTime(clock, &(clock_time_t){0});
 
     SimulateSeconds(clock, 86400);                    // simulo el paso de 86400 segundos. Un día completo
-    TEST_ASSERT_TIME(2, 4, 0, 0, 0, 0, current_time); // Verifico que la hora sea 00:00:00
+    TEST_ASSERT_TIME(0, 0, 0, 0, 0, 0, current_time); // Verifico que la hora sea 00:00:00
 }
 
 /**
@@ -286,19 +287,19 @@ void test_clock_with_different_tick_frequency(void) {
  */
 
 void test_set_and_get_alarm_time(void) {
-    clock_time_t alarm = {.time = {
-                              .hours = {2, 1},   // 12
-                              .minutes = {5, 4}, // 45
-                              .seconds = {3, 2}  // 23
-                          }};
+    clock_time_t alarma = {.time = {
+                               .hours = {2, 1},   // 12
+                               .minutes = {5, 4}, // 45
+                               .seconds = {3, 2}  // 23
+                           }};
 
     clock_time_t result;
 
     clock = Clock_Create(CLOCK_TICK_PER_SECOND);
-    ClockSetAlarm(clock, &alarm);
+    ClockSetAlarm(clock, &alarma);
     ClockGetAlarm(clock, &result);
 
-    TEST_ASSERT_EQUAL_UINT8_ARRAY(alarm.bcd, result.bcd, 6);
+    TEST_ASSERT_EQUAL_UINT8_ARRAY(alarma.bcd, result.bcd, 6);
 }
 
 /**
@@ -403,6 +404,50 @@ void test_alarm_postponed_does_not_fire_immediately(void) {
     SimulateSeconds(clock, 60); // avanza a 00:02:00
 
     TEST_ASSERT_FALSE_MESSAGE(alarm, "La alarma sonó aunque estaba pospuesta");
+}
+
+/**
+ * @brief Hacer sonar la alarma y cancelarla hasta el otro día.
+ *
+ * Esta prueba verifica que la alarma no se repita hasta el día siguiente, incluso si el tiempo del reloj coincide con
+ * la hora de la alarma.
+ */
+
+void test_alarm_does_not_repeat_until_next_day(void) {
+    clock_time_t alarma = {.bcd = {0, 0, 1, 0, 0, 0}}; // 00:01:00
+    clock_time_t inicio = {.bcd = {9, 5, 0, 0, 0, 0}}; // 00:00:59
+    clock_time_t result;
+
+    clock = Clock_Create(CLOCK_TICK_PER_SECOND);
+    alarm = false;
+
+    ClockSetAlarm(clock, &alarma);
+    ClockSetTime(clock, &inicio);
+    ClockEnableAlarm(clock, true);
+    ClockAttachAlarmCallback(clock, AlarmRinging);
+
+    SimulateSeconds(clock, 1); // 00:01:00
+    TEST_ASSERT_TRUE_MESSAGE(alarm, "La alarma no sono la primera vez");
+
+    alarm = false;
+    SimulateSeconds(clock, 60); // vuelve a 00:02:00, no debe sonar
+    TEST_ASSERT_FALSE_MESSAGE(alarm, "La alarma sono nuevamente el mismo dia");
+
+    // Simulamos hasta las 23:59:59
+    ClockSetTime(clock, &(clock_time_t){.bcd = {0, 0, 0, 0, 3, 2}}); // 23:00:00
+    alarm = false;
+    SimulateSeconds(clock, 3600); // pasa a 00:00:00 y resetea el flag
+    TEST_ASSERT_TIME(0, 0, 0, 0, 0, 0, current_time); // Verifico que la hora sea 00:00:00
+    
+    //  Simulamos hasta la hora de la alarma nuevamente
+    ClockSetAlarm(clock, &alarma); // vuelvo a configurar la alarma
+    ClockGetAlarm(clock, &result); // Verifico que la alarma se haya configurado correctamente
+    TEST_ASSERT_EQUAL_UINT8_ARRAY(alarma.bcd, result.bcd, 6);
+
+    ClockEnableAlarm(clock, true); // Habilito la alarma nuevamente
+    SimulateSeconds(clock, 60);    // llega a 00:01:00
+
+    TEST_ASSERT_TRUE_MESSAGE(alarm, "La alarma no sono al dia siguiente");
 }
 
 /* === End of documentation ========================================================================================*/

@@ -29,6 +29,7 @@ SPDX-License-Identifier: MIT
 #include "clock.h"
 #include <stddef.h>
 #include <string.h>
+#include <stdio.h>
 
 /* === Macros definitions ========================================================================================== */
 
@@ -43,6 +44,7 @@ struct clock_s {
     bool alarm_postponed;         // Indica si la alarma está pospuesta
     bool alarm_enabled;           // Indica si la alarma está habilitada
     bool valid;                   // Indica si la hora actual es válida (ha sido ajustada con ClockSetTime)
+    bool alarm_sounded_today;     // Indica si la alarma ha sonado hoy
     void (*alarm_callback)(void); // Puntero a la función de callback para la alarma
 };
 
@@ -80,6 +82,7 @@ clock_t Clock_Create(uint16_t tick_per_second) {
     self->valid = false;
     self->alarm_postponed = false;
     self->alarm_enabled = false;
+    self->alarm_sounded_today = false;
     return self;
 }
 
@@ -90,58 +93,73 @@ bool ClockGetTime(clock_t self, clock_time_t * result) {
     }
 
     memcpy(result, &self->current_time, sizeof(clock_time_t));
-    return self->valid;
+    return self->valid; // Devuelve true si la hora es válida, false si no ha sido ajustada
 }
 
 bool ClockSetTime(clock_t self, const clock_time_t * new_time) {
-    if (!self || !ClockIsValidTime(new_time)) {
-        return false;
-    }
 
-    self->valid = true;
+    self->valid = ClockIsValidTime(new_time);
     memcpy(&self->current_time, new_time, sizeof(clock_time_t));
     return self->valid;
 }
 
 void ClockNewTick(clock_t self) {
+    if (!self || !self->valid)
+        return;
+
     self->clock_ticks++;
-    if (self->clock_ticks >= self->ticks_per_second) { // Assuming 5 ticks per second
-        self->clock_ticks = 0;                         // Reset ticks after 5 ticks (1 second)
-        self->current_time.time.seconds[0]++;          // Increment seconds
+
+    if (self->clock_ticks >= self->ticks_per_second) {
+        self->clock_ticks = 0;
+
+        // Verificar si estamos justo en 23:59:59
+        if (self->current_time.time.hours[1] == 2 && self->current_time.time.hours[0] == 3 &&
+            self->current_time.time.minutes[1] == 5 && self->current_time.time.minutes[0] == 9 &&
+            self->current_time.time.seconds[1] == 5 && self->current_time.time.seconds[0] == 9) {
+
+            memset(&self->current_time, 0, sizeof(clock_time_t));
+            self->alarm_sounded_today = false;
+            self->valid = true;
+            return;
+        }
+
+        // Si no estamos en 23:59:59, avanzar normalmente
+        self->current_time.time.seconds[0]++;
         if (self->current_time.time.seconds[0] > 9) {
-            self->current_time.time.seconds[0] = 0; // Reset seconds to 0
-            self->current_time.time.seconds[1]++;   // Increment tens of seconds
+            self->current_time.time.seconds[0] = 0;
+            self->current_time.time.seconds[1]++;
             if (self->current_time.time.seconds[1] > 5) {
-                self->current_time.time.seconds[1] = 0; // Reset tens of seconds to 0
-                self->current_time.time.minutes[0]++;   // Increment minutes
+                self->current_time.time.seconds[1] = 0;
+                self->current_time.time.minutes[0]++;
                 if (self->current_time.time.minutes[0] > 9) {
-                    self->current_time.time.minutes[0] = 0; // Reset minutes to 0
-                    self->current_time.time.minutes[1]++;   // Increment tens of minutes
+                    self->current_time.time.minutes[0] = 0;
+                    self->current_time.time.minutes[1]++;
                     if (self->current_time.time.minutes[1] > 5) {
-                        self->current_time.time.minutes[1] = 0; // Reset tens of minutes to 0
-                        self->current_time.time.hours[0]++;     // Increment hours
+                        self->current_time.time.minutes[1] = 0;
+                        self->current_time.time.hours[0]++;
                         if (self->current_time.time.hours[0] > 9) {
-                            self->current_time.time.hours[0] = 0; // Reset hours to 0
-                            self->current_time.time.hours[1]++;   // Increment tens of hours
-                            if (self->current_time.time.hours[1] > 2 ||
-                                (self->current_time.time.hours[1] == 2 && self->current_time.time.hours[0] > 3)) {
-                                memset(&self->current_time.time, 0,
-                                       sizeof(self->current_time.time)); // Reset time to 00:00:00
-                            }
+                            self->current_time.time.hours[0] = 0;
+                            self->current_time.time.hours[1]++;
+                            // No se necesita rollover extra acá, lo manejamos antes
                         }
                     }
                 }
             }
         }
     }
+    // Revalidar hora (en caso de manipulación externa)
+    self->valid = ClockIsValidTime(&self->current_time);
 
-    if (self->alarm_enabled && self->alarm_callback && !self->alarm_postponed &&
-        memcmp(&self->alarm_time, &self->current_time, sizeof(clock_time_t)) == 0) {
-        self->alarm_callback();
-    }
-
+    // Cancelar alarma pospuesta si corresponde
     if (self->alarm_postponed && memcmp(&self->current_time, &self->postponed_until, sizeof(clock_time_t)) >= 0) {
         self->alarm_postponed = false;
+    }
+
+    // Ejecutar alarma si corresponde
+    if (self->alarm_enabled && self->alarm_callback && !self->alarm_postponed && !self->alarm_sounded_today &&
+        memcmp(&self->alarm_time, &self->current_time, sizeof(clock_time_t)) == 0) {
+        self->alarm_callback();
+        self->alarm_sounded_today = true;
     }
 }
 

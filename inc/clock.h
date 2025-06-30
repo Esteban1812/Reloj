@@ -48,11 +48,11 @@ extern "C" {
 
 typedef union {
     struct {
-        uint8_t seconds[2];
-        uint8_t minutes[2];
-        uint8_t hours[2];
+        uint8_t seconds[2]; // [0] unidad, [1] decena
+        uint8_t minutes[2]; // [0] unidad, [1] decena
+        uint8_t hours[2]; // [0] unidad, [1] decena
     } time;
-    uint8_t bcd[6];
+    uint8_t bcd[6]; // Representación BCD de la hora: [0] seg. unidad, [1] seg. decena, [2] min. unidad, [3] min. decena, [4] hora unidad, [5] hora decena
 } clock_time_t;
 
 typedef struct clock_s * clock_t;

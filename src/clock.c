@@ -39,6 +39,8 @@ struct clock_s {
     uint16_t ticks_per_second;    // Cantidad de ticks por segundo, por ejemplo 5 para 5Hz
     clock_time_t current_time;    // Hora actual del reloj
     clock_time_t alarm_time;      // Hora de la alarma
+    clock_time_t postponed_until; // Hora hasta la que se pospone la alarma
+    bool alarm_postponed;         // Indica si la alarma está pospuesta
     bool alarm_enabled;           // Indica si la alarma está habilitada
     bool valid;                   // Indica si la hora actual es válida (ha sido ajustada con ClockSetTime)
     void (*alarm_callback)(void); // Puntero a la función de callback para la alarma
@@ -76,6 +78,8 @@ clock_t Clock_Create(uint16_t tick_per_second) {
     memset(self, 0, sizeof(struct clock_s)); // Initialize the clock structure to zero
     self->ticks_per_second = tick_per_second;
     self->valid = false;
+    self->alarm_postponed = false;
+    self->alarm_enabled = false;
     return self;
 }
 
@@ -123,7 +127,6 @@ void ClockNewTick(clock_t self) {
                                 (self->current_time.time.hours[1] == 2 && self->current_time.time.hours[0] > 3)) {
                                 memset(&self->current_time.time, 0,
                                        sizeof(self->current_time.time)); // Reset time to 00:00:00
-    
                             }
                         }
                     }
@@ -132,12 +135,14 @@ void ClockNewTick(clock_t self) {
         }
     }
 
-    if (self->alarm_enabled &&
-    self->alarm_callback &&
-    memcmp(&self->alarm_time, &self->current_time, sizeof(clock_time_t)) == 0) {
-    self->alarm_callback();
-}
+    if (self->alarm_enabled && self->alarm_callback && !self->alarm_postponed &&
+        memcmp(&self->alarm_time, &self->current_time, sizeof(clock_time_t)) == 0) {
+        self->alarm_callback();
+    }
 
+    if (self->alarm_postponed && memcmp(&self->current_time, &self->postponed_until, sizeof(clock_time_t)) >= 0) {
+        self->alarm_postponed = false;
+    }
 }
 
 void ClockSetAlarm(clock_t self, const clock_time_t * alarm) {
@@ -161,6 +166,35 @@ void ClockEnableAlarm(clock_t self, bool enable) {
 void ClockAttachAlarmCallback(clock_t self, void (*callback)(void)) {
     if (self) {
         self->alarm_callback = callback;
+    }
+}
+
+void ClockPostponeAlarm(clock_t self, uint8_t minutos) {
+    if (!self)
+        return;
+
+    self->alarm_postponed = true;
+
+    self->postponed_until = self->current_time;
+
+    // Sumar minutos en BCD (simplificado)
+    self->postponed_until.time.minutes[0] += minutos;
+    while (self->postponed_until.time.minutes[0] > 9) {
+        self->postponed_until.time.minutes[0] -= 10;
+        self->postponed_until.time.minutes[1]++;
+    }
+    if (self->postponed_until.time.minutes[1] > 5) {
+        self->postponed_until.time.minutes[1] = 0;
+        self->postponed_until.time.hours[0]++;
+    }
+    if (self->postponed_until.time.hours[0] > 9) {
+        self->postponed_until.time.hours[0] = 0;
+        self->postponed_until.time.hours[1]++;
+    }
+    if (self->postponed_until.time.hours[1] > 2 ||
+        (self->postponed_until.time.hours[1] == 2 && self->postponed_until.time.hours[0] > 3)) {
+        self->postponed_until.time.hours[1] = 0;
+        self->postponed_until.time.hours[0] = 0;
     }
 }
 

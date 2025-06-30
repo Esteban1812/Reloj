@@ -110,7 +110,7 @@ void ClockGetAlarm(clock_t self, clock_time_t * alarm);
 
 /**
  * @brief setea la hora de la alarma del reloj.
- * 
+ *
  * @param self puntero a la instancia del reloj devuelta por la función Clock_Create.
  * @param alarm estructura que contiene la hora de la alarma a establecer.
  * @note La alarma se puede consultar posteriormente con ClockGetAlarm().
@@ -137,6 +137,15 @@ void ClockEnableAlarm(clock_t self, bool enable);
 
 void ClockAttachAlarmCallback(clock_t self, void (*callback)(void));
 
+/**
+ * @brief Pospone la alarma por un número específico de minutos.
+ *
+ * @param self Puntero a la instancia del reloj devuelta por la función Clock_Create.
+ * @param minutos Número de minutos para posponer la alarma.
+ * @note La alarma se pospondrá hasta el siguiente día si se excede el tiempo actual.
+ */
+
+void ClockPostponeAlarm(clock_t self, uint8_t minutos);
 
 /* === End of conditional blocks =================================================================================== */
 

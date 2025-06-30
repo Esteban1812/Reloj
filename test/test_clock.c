@@ -20,27 +20,31 @@ OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 SPDX-License-Identifier: MIT
 *********************************************************************************************************************/
 
-/** @file test_reloj.c
+/** @file test_clock.c
  ** @brief Codigo fuente para la gestión de las pruebas del reloj.
  **/
 
 /**
  * Pruebas del reloj:
 
-- Despues de n ciclos de reloj la hora avanza un segundo, diez segundos, un minuto, diez minutos, una hora, diez horas y
-un día completo.
-- Al inicializar el reloj está en 00:00 y con hora invalida.
-- Al ajustar la hora el reloj queda en hora y es válida.
-- Después de n ciclos de reloj la hora avanza un segundo, diez segundos, un minutos, diez minutos, una hora, diez horas
-y un día completo.
-- Fijar la hora de la alarma y consultarla.
-- Fijar la alarma y avanzar el reloj para que suene.
-- Fijar la alarma, deshabilitarla y avanzar el reloj para no suene.
-- Hacer sonar la alarma y posponerla.
-- Hacer sonar la alarma y cancelarla hasta el otro dia.
-- Probar get_time con NULL como argumento.
-- Tratar de ajustar la hora del reloj con valores invalidos y verificar que no pasa la prueba.
-- Hacer una prueba con frecuencia de reloj deferente a 5
+-1- Al inicializar el reloj está en 00:00 y con hora invalida.
+-2- Al ajustar la hora el reloj queda en hora y es válida.
+-3- Después de n ciclos de reloj la hora avanza un segundo.
+-4- Después de n ciclos de reloj la hora avanza diez segundos.
+-5- Después de n ciclos de reloj la hora avanza un minuto.
+-6- Después de n ciclos de reloj la hora avanza diez minutos.
+-7- Después de n ciclos de reloj la hora avanza una hora.
+-8- Después de n ciclos de reloj la hora avanza diez horas.
+-9- Después de n ciclos de reloj la hora avanza un día completo.
+-10- Probar get_time con NULL como argumento.
+-11- Tratar de ajustar la hora del reloj con valores invalidos y verificar que no pasa la prueba.
+-12- Hacer una prueba con frecuencia de reloj deferente a 5
+-13- Fijar la hora de la alarma y consultarla.
+-14- Fijar la alarma y avanzar el reloj para que suene.
+-15- Fijar la alarma, deshabilitarla y avanzar el reloj para no suene.
+-16- Hacer sonar la alarma y posponerla.
+-17- Hacer sonar la alarma y cancelarla hasta el otro dia.
+
  *
  */
 
@@ -75,8 +79,8 @@ clock_t clock; // Declaramos una variable global de tipo clock_t para el reloj
 
 /* === Private function definitions ================================================================================ */
 
-static void SimulateSeconds(clock_t clock, uint8_t seconds) {
-    for (uint8_t i = 0; i < CLOCK_TICK_PER_SECOND * seconds; i++) {
+static void SimulateSeconds(clock_t clock, uint32_t seconds) {
+    for (uint32_t i = 0; i < CLOCK_TICK_PER_SECOND * seconds; i++) {
         ClockNewTick(clock);
     }
 }
@@ -143,4 +147,68 @@ void test_clock_advance_ten_seconds(void) {
     TEST_ASSERT_TIME(0, 0, 0, 0, 1, 0, current_time); // Verifico que la hora sea 00:00:10
 }
 
+/**
+ * @brief Después de n ciclos de reloj la hora avanza un minuto
+ *
+ */
+
+void test_clock_advance_one_minute(void) {
+    // Inicializar el reloj a 00:00:00
+    ClockSetTime(clock, &(clock_time_t){0});
+
+    SimulateSeconds(clock, 60);                       // simulo el paso de 60 segundos
+    TEST_ASSERT_TIME(0, 0, 0, 1, 0, 0, current_time); // Verifico que la hora sea 00:01:00
+}
+
+/**
+ * @brief Después de n ciclos de reloj la hora avanza diez minutos.
+ *
+ */
+
+void test_clock_advance_ten_minutes(void) {
+    // Inicializar el reloj a 00:00:00
+    ClockSetTime(clock, &(clock_time_t){0});
+
+    SimulateSeconds(clock, 600);                       // simulo el paso de 600 segundos
+    TEST_ASSERT_TIME(0, 0, 1, 0, 0, 0, current_time); // Verifico que la hora sea 00:10:00
+}
+
+/**
+ * @brief Después de n ciclos de reloj la hora avanza una hora
+ *
+ */
+
+void test_clock_advance_one_hour(void) {
+    // Inicializar el reloj a 00:00:00
+    ClockSetTime(clock, &(clock_time_t){0});
+
+    SimulateSeconds(clock, 3600);                       // simulo el paso de 3600 segundos
+    TEST_ASSERT_TIME(0, 1, 0, 0, 0, 0, current_time); // Verifico que la hora sea 01:00:00
+}
+
+/**
+ * @brief Después de n ciclos de reloj la hora avanza diez horas
+ *
+ */
+
+void test_clock_advance_ten_hours(void) {
+    // Inicializar el reloj a 00:00:00
+    ClockSetTime(clock, &(clock_time_t){0});
+
+    SimulateSeconds(clock, 36000);                       // simulo el paso de 36000 segundos. Diez horas
+    TEST_ASSERT_TIME(1, 0, 0, 0, 0, 0, current_time); // Verifico que la hora sea 10:00:00
+}
+
+/**
+ * @brief Después de n ciclos de reloj la hora avanza un día completo
+ *
+ */
+
+void test_clock_advance_one_day(void) {
+    // Inicializar el reloj a 00:00:00
+    ClockSetTime(clock, &(clock_time_t){0});
+
+    SimulateSeconds(clock, 86400);                       // simulo el paso de 86400 segundos. Un día completo
+    TEST_ASSERT_TIME(2, 4, 0, 0, 0, 0, current_time); // Verifico que la hora sea 00:00:00
+}
 /* === End of documentation ========================================================================================*/

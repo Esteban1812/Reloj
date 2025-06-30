@@ -92,7 +92,8 @@ void ClockNewTick(clock_t self) {
                             self->current_time.time.hours[1]++;   // Increment tens of hours
                             if (self->current_time.time.hours[1] > 2 ||
                                 (self->current_time.time.hours[1] == 2 && self->current_time.time.hours[0] > 3)) {
-                                self->current_time.time.hours[1] = 0; // Reset tens of hours to 0
+                                memset(&self->current_time.time, 0, sizeof(self->current_time.time)); // Reset time to 00:00:00
+                                //self->valid = false; // Invalidate the clock time if it exceeds 23:59:59
                             }
                         }
                     }

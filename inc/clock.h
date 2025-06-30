@@ -100,7 +100,23 @@ bool ClockSetTime(clock_t self, const clock_time_t * new_time);
 
 void ClockNewTick(clock_t self);
 
+/**
+ * @brief consulta la hora de la alarma del reloj.
+ *
+ * @param self Puntero a la instancia del reloj devuelta por la función Clock_Create.
+ * @param alarm Estructura que contiene la hora de la alarma a establecer.
+ */
+void ClockGetAlarm(clock_t self, clock_time_t * alarm);
 
+/**
+ * @brief setea la hora de la alarma del reloj.
+ * 
+ * @param self puntero a la instancia del reloj devuelta por la función Clock_Create.
+ * @param alarm estructura que contiene la hora de la alarma a establecer.
+ * @note La alarma se puede consultar posteriormente con ClockGetAlarm().
+ */
+
+void ClockSetAlarm(clock_t self, const clock_time_t * alarm);
 /* === End of conditional blocks =================================================================================== */
 
 #ifdef __cplusplus

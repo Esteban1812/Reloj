@@ -274,4 +274,29 @@ void test_clock_with_different_tick_frequency(void) {
     TEST_ASSERT_EQUAL_UINT8(0, result.bcd[1]); // segundos decenas = 0
 }
 
+/**
+ * @brief Fijar la hora de la alarma y consultarla.
+ *
+ * Esta prueba verifica que se pueda establecer una hora de alarma y luego recuperarla correctamente.
+ */
+
+void test_set_and_get_alarm_time(void) {
+    clock_time_t alarm = {
+        .time = {
+            .hours = {2, 1},    // 12
+            .minutes = {5, 4},  // 45
+            .seconds = {3, 2}   // 23
+        }
+    };
+
+    clock_time_t result;
+
+    clock = Clock_Create(5);
+    ClockSetAlarm(clock, &alarm);
+    ClockGetAlarm(clock, &result);
+
+    TEST_ASSERT_EQUAL_UINT8_ARRAY(alarm.bcd, result.bcd, 6);
+}
+
+
 /* === End of documentation ========================================================================================*/

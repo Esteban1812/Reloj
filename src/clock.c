@@ -39,6 +39,7 @@ struct clock_s {
     clock_time_t current_time;
     bool valid;
     uint16_t ticks_per_second;
+    clock_time_t alarm_time;
 };
 
 /* === Private function declarations =============================================================================== */
@@ -127,5 +128,15 @@ void ClockNewTick(clock_t self) {
             }
         }
     }
+}
+
+void ClockSetAlarm(clock_t self, const clock_time_t * alarm) {
+    if (!self || !alarm) return;
+    memcpy(&self->alarm_time, alarm, sizeof(clock_time_t));
+}
+
+void ClockGetAlarm(clock_t self, clock_time_t * alarm) {
+    if (!self || !alarm) return;
+    memcpy(alarm, &self->alarm_time, sizeof(clock_time_t));
 }
 /* === End of documentation ======================================================================================== */

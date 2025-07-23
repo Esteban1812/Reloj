@@ -45,8 +45,7 @@ SPDX-License-Identifier: MIT
 -16- Fijar la alarma, deshabilitarla y avanzar el reloj para NO suene.
 -17- Hacer sonar la alarma y posponerla.
 -18- Hacer sonar la alarma y cancelarla hasta el otro dia.
-
- *
+-19- Si se pospone dos veces la alarma, debe sonar después del segundo posponer
  */
 
 /* === Headers files inclusions ==================================================================================== */
@@ -397,13 +396,12 @@ void test_alarm_postponed_does_not_fire_immediately(void) {
 
     SimulateSeconds(clock, 1); // pasa a 00:01:00, la alarma suena
     TEST_ASSERT_TRUE(alarm);
-
-    ClockPostponeAlarm(clock, 1); // posponer 1 minuto
     alarm = false;
+    ClockPostponeAlarm(clock, 1); // posponer 1 minuto. la nueva hora de la alarma es 00:02:00
 
-    SimulateSeconds(clock, 60); // avanza a 00:02:00
+    SimulateSeconds(clock, 10); // avanza a 00:01:01
 
-    TEST_ASSERT_FALSE_MESSAGE(alarm, "La alarma sonó aunque estaba pospuesta");
+    TEST_ASSERT_FALSE_MESSAGE(alarm, "La alarma sono aunque estaba pospuesta");
 }
 
 /**
@@ -436,9 +434,9 @@ void test_alarm_does_not_repeat_until_next_day(void) {
     // Simulamos hasta las 23:59:59
     ClockSetTime(clock, &(clock_time_t){.bcd = {0, 0, 0, 0, 3, 2}}); // 23:00:00
     alarm = false;
-    SimulateSeconds(clock, 3600); // pasa a 00:00:00 y resetea el flag
+    SimulateSeconds(clock, 3600);                     // pasa a 00:00:00 y resetea el flag
     TEST_ASSERT_TIME(0, 0, 0, 0, 0, 0, current_time); // Verifico que la hora sea 00:00:00
-    
+
     //  Simulamos hasta la hora de la alarma nuevamente
     ClockSetAlarm(clock, &alarma); // vuelvo a configurar la alarma
     ClockGetAlarm(clock, &result); // Verifico que la alarma se haya configurado correctamente
@@ -448,6 +446,37 @@ void test_alarm_does_not_repeat_until_next_day(void) {
     SimulateSeconds(clock, 60);    // llega a 00:01:00
 
     TEST_ASSERT_TRUE_MESSAGE(alarm, "La alarma no sono al dia siguiente");
+}
+
+/**
+ * @brief Si se pospone dos veces la alarma, debe sonar después del segundo posponer
+ * Posponer alarma más de una vez
+ * Esperado: no debe sonar hasta cumplirse la última posposición.
+ */
+
+void test_alarm_multiple_postpones(void) {
+    clock_time_t alarma = {.bcd = {0, 0, 1, 0, 0, 0}}; // 00:01:00
+    clock_time_t inicio = {.bcd = {9, 5, 0, 0, 0, 0}}; // 00:00:59
+
+    clock = Clock_Create(CLOCK_TICK_PER_SECOND);
+    alarm = false;
+
+    ClockSetAlarm(clock, &alarma);
+    ClockSetTime(clock, &inicio);
+    ClockEnableAlarm(clock, true);
+    ClockAttachAlarmCallback(clock, AlarmRinging);
+
+    SimulateSeconds(clock, 1); // 00:01:00
+    TEST_ASSERT_TRUE(alarm);   // la alarma suena
+    alarm = false;
+
+    ClockPostponeAlarm(clock, 1); // → 00:02:00
+    SimulateSeconds(clock, 30);
+    ClockPostponeAlarm(clock, 1); // → 00:03:00
+
+    SimulateSeconds(clock, 90); // llegar a 00:03:00
+
+    TEST_ASSERT_TRUE_MESSAGE(alarm, "La alarma no sono despues del segundo posponer");
 }
 
 /* === End of documentation ========================================================================================*/

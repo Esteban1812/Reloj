@@ -64,8 +64,10 @@ typedef struct clock_s * clock_t;
 /**
  * @brief Crea una instancia del reloj.
  *
- * @return clock_t Puntero a la instancia del reloj creada.
  * @note Esta función debe ser llamada antes de usar cualquier otra función del reloj.
+ * @param tick_per_second Frecuencia del reloj en ticks por segundo (por ejemplo, 5 para 5Hz).
+ *                        cantidad de pulsos que recibe para contar un segundo.
+ * @return Devuelve un puntero a la instancia del reloj.
  */
 
 clock_t Clock_Create(uint16_t tick_per_second);
@@ -92,7 +94,7 @@ bool ClockGetTime(clock_t self, clock_time_t * result);
 bool ClockSetTime(clock_t self, const clock_time_t * new_time);
 
 /**
- * @brief Avanza el reloj un tick, lo que equivale a un segundo.
+ * @brief Funcion para contar un tick del reloj y actualizar la hora.
  *
  * @param self Puntero a la instancia del reloj devuelta por la función Clock_Create.
  * @note Esta función debe ser llamada periódicamente para simular el avance del tiempo.
@@ -101,7 +103,7 @@ bool ClockSetTime(clock_t self, const clock_time_t * new_time);
 void ClockNewTick(clock_t self);
 
 /**
- * @brief consulta la hora de la alarma del reloj.
+ * @brief Funcion para obtener la hora de la alarma. y el estado de la alarma.
  *
  * @param self Puntero a la instancia del reloj devuelta por la función Clock_Create.
  * @param alarm Estructura que contiene la hora de la alarma a establecer.

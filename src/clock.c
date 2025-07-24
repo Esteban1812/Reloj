@@ -20,8 +20,8 @@ OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 SPDX-License-Identifier: MIT
 *********************************************************************************************************************/
 
-/** @file plantilla.c
- ** @brief Plantilla para la creación de archivos de código fuente en lenguaje C
+/** @file clock.c
+ ** @brief Codigo fuente del módulo CLOCK para la gestión de la hora (00.00.00) y alarma.
  **/
 
 /* === Headers files inclusions ==================================================================================== */

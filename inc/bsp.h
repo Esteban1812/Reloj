@@ -76,6 +76,13 @@ typedef struct Board_s {
 
 Board_t Board_Create(void);
 
+/**
+ * @brief Inicializa el temporizador del sistema.
+ *
+ * @param ticks Número de ticks para el temporizador.
+ */
+void SysTickInt(uint32_t ticks);
+
 /* === End of conditional blocks =================================================================================== */
 
 #ifdef __cplusplus

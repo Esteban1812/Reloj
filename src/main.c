@@ -42,8 +42,12 @@
 
 #include <stdbool.h>
 #include "bsp.h"
-
+#include "screen.h"
+#include "clock.h"
+#include <stdio.h>
 /* === Macros definitions ====================================================================== */
+
+#define CLOCK_TICK_PER_SECOND 5 // Definimos la frecuencia del reloj
 
 /* === Private data type declarations ========================================================== */
 
@@ -53,18 +57,24 @@
 
 /* === Public variable definitions ============================================================= */
 
+static Board_t board; // variable global para la placa
+static clock_t clock; // variable global para el reloj
+
 /* === Private variable definitions ============================================================ */
 
 /* === Private function implementation ========================================================= */
-
-/* === Public function implementation ========================================================= */
-
 int main(void) {
-    int divisor = 0;
-    uint8_t value[4] = {1, 2, 3, 4};
-    Board_t board = Board_Create();
+    clock_time_t hora_inicial = {.bcd = {0, 0, 0, 0, 0, 0}}; // Hora inicial en formato BCD (00:00:00)
+    clock_time_t hora_actual; // Variable para almacenar la hora actual del reloj
+    uint8_t hora[4]; // Inicializamos el array de valores a mostrar en la pantalla
+    board = Board_Create();
+    clock = Clock_Create(CLOCK_TICK_PER_SECOND);
 
-    ScreenWriteBCD(board->screen, value, 4);
+ClockSetTime(clock, &hora_inicial); // Ajustar la hora inicial del reloj
+
+    // Configurar SysTick para generar interrupciones cada 1000 ms
+    SysTickInt(1000); // Configura SysTick para 1 segundo
+
     /*
      DisplayFlashDigits(board->screen, 0, 4, 50);
 
@@ -80,55 +90,49 @@ int main(void) {
     while (true) {
 
         if (!DigitalInput_GetIsActive(board->accept)) {
-            DigitalOutput_Activate(board->blue_led);
-        } else {
-            DigitalOutput_Deactivate(board->blue_led);
+           
         }
         if (!DigitalInput_GetIsActive(board->cancel)) {
-            DigitalOutput_Activate(board->red_led);
-        } else {
-            DigitalOutput_Deactivate(board->red_led);
+            
         }
         if (DigitalInput_GetIsActive(board->increment)) {
-            ScreenSetPoint(board->screen, 4, true);
-        } else {
-            ScreenSetPoint(board->screen, 4, false);
+            
         }
         if (DigitalInput_GetIsActive(board->decrement)) {
-            ScreenSetPoint(board->screen, 3, true);
-        } else {
-            ScreenSetPoint(board->screen, 3, false);
+            
         }
         if (DigitalInput_GetIsActive(board->set_time)) {
-            ScreenSetPoint(board->screen, 1, true);
-        } else {
-            ScreenSetPoint(board->screen, 1, false);
+            
         }
 
         if (DigitalInput_GetIsActive(board->set_alarm)) {
-            ScreenSetPoint(board->screen, 2, true);
-        } else {
-            ScreenSetPoint(board->screen, 2, false);
+            
         }
 
-        if (Digital_WasActivated(board->increment)) {
-            DigitalOutput_Activate(board->buzzer); // CORREGIR PONCHO
-        }
-        if (Digital_WasActivated(board->decrement)) {
-            DigitalOutput_Deactivate(board->buzzer); // CORREGIR PONCHO
-        }
+            
 
-        divisor++;
-        if (divisor == 100) {
-            divisor = 0;
-            DigitalOutput_Toggle(board->green_led);
-        }
+
+        
+        // Mostrar hora en display
+        ClockGetTime(clock, &hora_actual);
+
+        hora[0] = hora_actual.bcd[5]; // Hora decenas
+        hora[1] = hora_actual.bcd[4]; // Hora unidades
+        hora[2] = hora_actual.bcd[3]; // Minutos decenas
+        hora[3] = hora_actual.bcd[2]; // Minutos unidades
+
+        ScreenWriteBCD(board->screen, hora, 4);
         ScreenRefresh(board->screen);
 
-        for (int delay = 0; delay < 25000; delay++) {
-            __asm("NOP");
-        }
     }
+}
+
+void SysTick_Handler(void) {
+    // Aquí manejo el evento del SysTick. una acción periódica
+    ScreenRefresh(board->screen); // actualizar la pantalla
+    ClockNewTick(clock);          // Llamar a la función de reloj para manejar el tick del reloj
+    printf ("Tick del reloj:"); 
+    
 }
 
 /* === End of documentation ==================================================================== */

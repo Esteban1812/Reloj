@@ -170,4 +170,15 @@ Board_t Board_Create(void) {
     return self;
 }
 
+void SysTickInt(uint32_t ticks) {
+    __asm volatile("cpsid i"); // Deshabilita las interrupciones para evitar conflictos durante la configuración
+
+    SystemCoreClockUpdate(); // Actualiza la variable SystemCoreClock segun frecuencia del reloj del sistema
+
+    SysTick_Config(SystemCoreClock /
+                   ticks); // Configura el temporizador del sistema con el número de ticks especificado
+
+    __asm volatile("cpsie i"); // Habilita las interrupciones nuevamente
+}
+
 /* === End of documentation ======================================================================================== */

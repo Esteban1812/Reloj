@@ -44,10 +44,9 @@
 #include "bsp.h"
 #include "screen.h"
 #include "clock.h"
-#include <stdio.h>
 /* === Macros definitions ====================================================================== */
 
-#define CLOCK_TICK_PER_SECOND 5 // Definimos la frecuencia del reloj
+#define CLOCK_TICK_PER_SECOND 10000 // Definimos la frecuencia del reloj
 
 /* === Private data type declarations ========================================================== */
 
@@ -59,12 +58,14 @@
 
 static Board_t board; // variable global para la placa
 static clock_t clock; // variable global para el reloj
+static bool state_point = false; // Variable para controlar la visibilidad del punto central
+
 
 /* === Private variable definitions ============================================================ */
 
 /* === Private function implementation ========================================================= */
 int main(void) {
-    clock_time_t hora_inicial = {.bcd = {0, 0, 0, 0, 0, 0}}; // Hora inicial en formato BCD (00:00:00)
+    clock_time_t hora_inicial = {.bcd = {0, 0, 8, 2, 9, 1}}; // Hora inicial en formato BCD (00:00:00)
     clock_time_t hora_actual; // Variable para almacenar la hora actual del reloj
     uint8_t hora[4]; // Inicializamos el array de valores a mostrar en la pantalla
     board = Board_Create();
@@ -72,20 +73,9 @@ int main(void) {
 
 ClockSetTime(clock, &hora_inicial); // Ajustar la hora inicial del reloj
 
+
     // Configurar SysTick para generar interrupciones cada 1000 ms
-    SysTickInt(1000); // Configura SysTick para 1 segundo
-
-    /*
-     DisplayFlashDigits(board->screen, 0, 4, 50);
-
-     ScreenSetPoint(board->screen, 4, false);
-     ScreenSetPoint(board->screen, 3, false);
-     ScreenSetPoint(board->screen, 2, true);
-     ScreenSetPoint(board->screen, 1, false);
-     DisplayFlashPoints(board->screen, 1, 4, 50);
-
-
-     */
+    SysTickInt(10000); // Configura SysTick para 1 segundo
 
     while (true) {
 
@@ -108,31 +98,40 @@ ClockSetTime(clock, &hora_inicial); // Ajustar la hora inicial del reloj
         if (DigitalInput_GetIsActive(board->set_alarm)) {
             
         }
-
             
+// Mostrar hora en display
+    ClockGetTime(clock, &hora_actual);
 
+    hora[0] = hora_actual.bcd[5]; // Hora decenas
+    hora[1] = hora_actual.bcd[4]; // Hora unidades
+    hora[2] = hora_actual.bcd[3]; // Minutos decenas
+    hora[3] = hora_actual.bcd[2]; // Minutos unidades
+
+    ScreenWriteBCD(board->screen, hora, sizeof(hora));       // Escribo hora
 
         
         // Mostrar hora en display
-        ClockGetTime(clock, &hora_actual);
+        
 
-        hora[0] = hora_actual.bcd[5]; // Hora decenas
-        hora[1] = hora_actual.bcd[4]; // Hora unidades
-        hora[2] = hora_actual.bcd[3]; // Minutos decenas
-        hora[3] = hora_actual.bcd[2]; // Minutos unidades
-
-        ScreenWriteBCD(board->screen, hora, 4);
-        ScreenRefresh(board->screen);
 
     }
 }
 
 void SysTick_Handler(void) {
-    // Aquí manejo el evento del SysTick. una acción periódica
-    ScreenRefresh(board->screen); // actualizar la pantalla
-    ClockNewTick(clock);          // Llamar a la función de reloj para manejar el tick del reloj
-    printf ("Tick del reloj:"); 
-    
+    // Aquí manejo el evento del SysTick. manejo acciones periódicas
+
+static uint16_t tick_count = 0;
+
+    tick_count++;
+
+    if (tick_count >= CLOCK_TICK_PER_SECOND) {
+        tick_count = 0;
+        state_point = !state_point;  // Cambia el estado del punto cada segundo
+    }
+    ScreenSetPoint(board->screen, 2, state_point);           // Apago/Prendo punto
+    ClockNewTick(clock); // Incremento el reloj
+    ScreenRefresh(board->screen);                            // Refresco pantalla
+
 }
 
 /* === End of documentation ==================================================================== */

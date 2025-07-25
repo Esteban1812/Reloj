@@ -46,7 +46,7 @@
 #include "clock.h"
 /* === Macros definitions ====================================================================== */
 
-#define CLOCK_TICK_PER_SECOND 10000 // Definimos la frecuencia del reloj
+#define CLOCK_TICK_PER_SECOND 1000 // Definimos la frecuencia del reloj
 
 /* === Private data type declarations ========================================================== */
 
@@ -64,11 +64,15 @@ typedef enum {               // Estados del reloj:
 
 /* === Public variable definitions ============================================================= */
 
-static Board_t board; // variable global para la placa
-static clock_t clock; // variable global para el reloj
-static state_t state; // Variable para controlar el estado (MODO) del reloj
+static Board_t board;                       // variable global para la placa
+static clock_t clock;                       // variable global para el reloj
+static state_t state;                       // Variable para controlar el estado (MODO) del reloj
+static uint16_t set_time_pressed_ticks = 0; // Ticks que F1 estuvo presionado
 
 /* === Private variable definitions ============================================================ */
+
+static const uint8_t limits_min[] = {5, 9};  // Limites de los minutos
+static const uint8_t limits_hour[] = {2, 3}; // Limites de las horas
 
 /* === Private function implementation ========================================================= */
 void Change_status(state_t new_state) {
@@ -76,20 +80,22 @@ void Change_status(state_t new_state) {
     switch (state)     // Dependiendo del estado, se realizan diferentes acciones
     {
     case INITIALIZING:
-        DisplayFlashDigits(board->screen, 0, 3, CLOCK_TICK_PER_SECOND); // Parpadeo de todos los dígitos del display
-        break;
+    DisplayFlashDigits(board->screen, 0, 3, 50);         // Parpadeo de todos los dígitos
+    ScreenSetPoint(board->screen, 1, true);
+    break;
+
     case SHOWING_TIME:
         DisplayFlashDigits(board->screen, 0, 0, 0); // Muestra la hora actual sin parpadeo
         break;
     case SETTING_CURRENT_TIME:
-        DisplayFlashDigits(board->screen, 0, 1, CLOCK_TICK_PER_SECOND); // Parpadeo del dígito de las horas
+        DisplayFlashDigits(board->screen, 0, 1, 100); // Parpadeo del dígito de las horas
         break;
     case SETTING_CURRENT_MINUTES:
-        DisplayFlashDigits(board->screen, 2, 3, CLOCK_TICK_PER_SECOND); // Parpadeo del dígito de los minutos
+        DisplayFlashDigits(board->screen, 2, 3, 100); // Parpadeo del dígito de los minutos
         break;
     case SETTING_ALARM_TIME:
-        DisplayFlashDigits(board->screen, 0, 1, CLOCK_TICK_PER_SECOND); // Parpadeo del dígito de las horas de la alarma
-        // enciende los puntos de los dígitos
+        DisplayFlashDigits(board->screen, 0, 1, 100); // Parpadeo del dígito de las horas de la alarma
+       // Prendo todos los puntos para indicar modo alarma
         ScreenSetPoint(board->screen, 1, true);
         ScreenSetPoint(board->screen, 2, true);
         ScreenSetPoint(board->screen, 3, true);
@@ -97,8 +103,8 @@ void Change_status(state_t new_state) {
         break;
     case SETTING_ALARM_MINUTES:
         DisplayFlashDigits(board->screen, 2, 3,
-                           CLOCK_TICK_PER_SECOND); // Parpadeo del dígito de los minutos de la alarma
-        // enciende los puntos de los dígitos
+                           100); // Parpadeo del dígito de los minutos de la alarma
+        // Prendo todos los puntos para indicar modo alarma
         ScreenSetPoint(board->screen, 0, true);
         ScreenSetPoint(board->screen, 1, true);
         ScreenSetPoint(board->screen, 3, true);
@@ -106,6 +112,32 @@ void Change_status(state_t new_state) {
         break;
     default:
         break;
+    }
+}
+
+void IncrementBCD(uint8_t num[2], const uint8_t limite[2]) {
+    // Incrementa el valor BCD y lo ajusta al límite
+    num[1]++;
+    if (num[1] > 9) {
+        num[1] = 0;
+        num[0]++;
+        if ((num[0] > limite[0]) && (num[1] > limite[1])) {
+            num[0] = 0; // Reinicia a cero si se supera el límite
+            num[1] = 0; // Reinicia a cero si se supera el límite
+        }
+    }
+}
+
+void DecrementBCD(uint8_t num[2], const uint8_t limite[2]) {
+    // Decrementa el valor BCD y lo ajusta al límite
+    num[1]--;
+    if (num[1] > 9) {
+        num[1] = 9;
+        num[0]--;
+        if ((num[0] < limite[0]) && (num[1] < limite[1])) {
+            num[0] = limite[0]; // Ajusta al límite inferior
+            num[1] = limite[1]; // Ajusta al límite inferior
+        }
     }
 }
 
@@ -119,12 +151,16 @@ int main(void) {
     clock = Clock_Create(CLOCK_TICK_PER_SECOND);
 
     // Configurar SysTick para generar interrupciones cada 1000 ms
-    SysTickInt(10000);           // Configura SysTick para 1 segundo
+    SysTickInt(1000);            // Configura SysTick para 1 segundo
     Change_status(INITIALIZING); // Cambia el estado inicial del reloj
+
+/*
 
     while (true) {
 
-        if (!DigitalInput_GetIsActive(board->accept)) {
+        if (Digital_WasActivated(board->accept)) {
+            if (state == SHOWING_TIME) {
+            }
             if (state == SETTING_CURRENT_MINUTES) {
                 Change_status(SETTING_CURRENT_TIME); // Cambia al estado de configuración de la hora actual
             } else if (state == SETTING_CURRENT_TIME) {
@@ -132,7 +168,7 @@ int main(void) {
                 Change_status(SHOWING_TIME);        // Cambia al estado de mostrar la hora actual
             }
 
-            if (!DigitalInput_GetIsActive(board->cancel)) {
+            if (Digital_WasActivated(board->cancel)) {
                 if (ClockGetTime(clock, &current_time)) {
                     Change_status(SHOWING_TIME); // Cambia al estado de mostrar la hora actual
                 } else {
@@ -140,18 +176,33 @@ int main(void) {
                 }
             }
 
-
-            if (DigitalInput_GetIsActive(board->set_time)) {
-                Change_status(SETTING_CURRENT_TIME); // Cambia al estado de configuración de la hora actual
-                ClockGetTime(clock, &current_time);  // Obtiene la hora actual del reloj
-                hora[0] = current_time.bcd[5];       // Hora decenas
-                hora[1] = current_time.bcd[4];       // Hora unidades
-                hora[2] = current_time.bcd[3];       // Minutos decenas
-                hora[3] = current_time.bcd[2];       // Minutos unidades
-                ScreenWriteBCD(board->screen, hora, sizeof(hora)); // Muestra la hora actual en el display
+            if (Digital_WasActivated(board->increment)) {
+                if (state == SETTING_CURRENT_MINUTES) {
+                    IncrementBCD(&hora[2], limits_min); // Incrementa los minutos
+                } else if (state == SETTING_CURRENT_TIME) {
+                    IncrementBCD(&hora[0], limits_hour); // Incrementa las horas
+                } else if (state == SETTING_ALARM_MINUTES) {
+                    IncrementBCD(&hora[2], limits_min); // Incrementa los minutos de la alarma
+                } else if (state == SETTING_ALARM_TIME) {
+                    IncrementBCD(&hora[0], limits_hour); // Incrementa las horas de la alarma
+                }
+                ScreenWriteBCD(board->screen, hora, sizeof(hora)); // Muestra la hora actualizada en el display
             }
 
-            if (DigitalInput_GetIsActive(board->set_alarm)) {
+            if (Digital_WasActivated(board->decrement)) {
+                if (state == SETTING_CURRENT_MINUTES) {
+                    DecrementBCD(&hora[2], limits_min); // Decrementa los minutos
+                } else if (state == SETTING_CURRENT_TIME) {
+                    DecrementBCD(&hora[0], limits_hour); // Decrementa las horas
+                } else if (state == SETTING_ALARM_MINUTES) {
+                    DecrementBCD(&hora[2], limits_min); // Decrementa los minutos de la alarma
+                } else if (state == SETTING_ALARM_TIME) {
+                    DecrementBCD(&hora[0], limits_hour); // Decrementa las horas de la alarma
+                }
+                ScreenWriteBCD(board->screen, hora, sizeof(hora)); // Muestra la hora actualizada en el display
+            }
+
+            if (Digital_WasActivated(board->set_alarm)) {
                 Change_status(SETTING_ALARM_TIME);   // Cambia al estado de configuración de la hora de la alarma
                 ClockGetAlarm(clock, &current_time); // Obtiene la hora de la alarma del reloj
                 hora[0] = current_time.bcd[5];       // Hora decenas
@@ -159,47 +210,59 @@ int main(void) {
                 hora[2] = current_time.bcd[3];       // Minutos decenas
                 hora[3] = current_time.bcd[2];       // Minutos unidades
             }
-            }
         }
-        return 0;
     }
-    
-    /* === Interrupt handler implementation ========================================================= */
-    void SysTick_Handler(void) {
-        static bool state_point = false; // Variable para controlar la visibilidad del punto central
-        static uint16_t tick_count = 0;
-        uint8_t hora[4];
-        clock_time_t current_time;
-    
-        tick_count++;
-    
-        ClockNewTick(clock); // Incrementa el reloj
-    
-        if (tick_count >= CLOCK_TICK_PER_SECOND) {
-            tick_count = 0;
+        */
+    return 0;
+}
+
+/* === Interrupt handler implementation ========================================================= */
+void SysTick_Handler(void) {
+    //static bool state_point = false;
+    //static uint16_t tick_count = 0;
+    uint8_t hora[4];
+    clock_time_t current_time;
+
+    //tick_count++;
+    ClockNewTick(clock);
+
+
+    /*
+    if (DigitalInput_GetIsActive(board->set_time)) {
+        set_time_pressed_ticks++;
+    } else {
+        set_time_pressed_ticks = 0;
+    }
+
+    if (set_time_pressed_ticks >= 3) {
+        set_time_pressed_ticks = 0;
+        if (state == SHOWING_TIME || state == INITIALIZING) {
+            Change_status(SETTING_CURRENT_MINUTES); // Entrar a modo ajuste hora
+            ClockGetTime(clock, &current_time);
+            hora[0] = current_time.bcd[5]; // Hora dec
+            hora[1] = current_time.bcd[4]; // Hora uni
+            hora[2] = current_time.bcd[3]; // Min dec
+            hora[3] = current_time.bcd[2]; // Min uni
+            ScreenWriteBCD(board->screen, hora, sizeof(hora));
+        }
+    }
+*/
+    if (state <= SHOWING_TIME) {
+        ClockGetTime(clock, &current_time);
+        hora[0] = current_time.bcd[5];
+        hora[1] = current_time.bcd[4];
+        hora[2] = current_time.bcd[3];
+        hora[3] = current_time.bcd[2];
+        ScreenWriteBCD(board->screen, hora, sizeof(hora));
+        /*if (tick_count >= CLOCK_TICK_PER_SECOND) {
             state_point = !state_point;
-            if (state_point) {
-                ScreenSetPoint(board->screen, 2, true); // Enciende el punto central
-            } else {
-                ScreenSetPoint(board->screen, 2, false); // Apaga el punto central
-            }
-    
-            if (state <= SHOWING_TIME) {
-    
-                // Mostrar hora en display
-                
-                ClockGetTime(clock, &current_time); // Obtiene la hora actual del reloj
-                hora[0] = current_time.bcd[5]; // Hora decenas
-                hora[1] = current_time.bcd[4]; // Hora unidades
-                hora[2] = current_time.bcd[3]; // Minutos decenas
-                hora[3] = current_time.bcd[2]; // Minutos unidades
-                ScreenWriteBCD(board->screen, hora, sizeof(hora));
-            }
-        }
-    
-        ScreenRefresh(board->screen);
+            tick_count = 0; // Reinicia el contador de ticks
+        }*/
     }
-    
-    /* === End of documentation ==================================================================== */
-    
-    /** @} End of module definition for doxygen */
+   //ScreenSetPoint(board->screen, 2, state_point); 
+    ScreenRefresh(board->screen);
+}
+
+/* === End of documentation ==================================================================== */
+
+/** @} End of module definition for doxygen */

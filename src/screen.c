@@ -36,7 +36,7 @@ SPDX-License-Identifier: MIT
 /* === Macros definitions ========================================================================================== */
 
 #ifndef SCREEN_MAX_DIGITS
-#define SCREEN_MAX_DIGITS 8
+#define SCREEN_MAX_DIGITS 4 // Definimos el número máximo de dígitos que puede manejar la pantalla
 #endif
 
 /* === Private data type declarations ============================================================================== */
@@ -44,16 +44,16 @@ SPDX-License-Identifier: MIT
 struct screen_s {
     uint8_t digits;                   // numero de digitos de la pantalla
     uint8_t value[SCREEN_MAX_DIGITS]; // valores a mostrar en la pantalla
+    bool points[SCREEN_MAX_DIGITS];   // puntos decimales de cada digito
     uint8_t current_digit;            // digito actual que se esta mostrando
     screen_driver_t driver;           // puntero a la estructura de driver de pantalla
     uint8_t flashing_from;            // rango de digitos a parpadear
     uint8_t flashing_to;              // rango de digitos a parpadear
     uint8_t flashing_count;           // contador de parpadeo
     uint16_t flashing_frequency;      // frecuencia de parpadeo en milisegundos
-    uint8_t flashing_point_from;    // punto decimal del primer digito a parpadear
-    uint8_t flashing_point_to;  // punto decimal del ultimo digito a parpadear
-    //bool flashing_point_enable; // habilita el punto decimal en los digitos que parpadean
-
+    uint8_t flashing_point_from;      // punto decimal del primer digito a parpadear
+    uint8_t flashing_point_to;        // punto decimal del ultimo digito a parpadear
+    // bool flashing_point_enable; // habilita el punto decimal en los digitos que parpadean
 };
 
 /* === Private function declarations =============================================================================== */
@@ -79,9 +79,10 @@ static const uint8_t IMAGES[10] = {
 
 /* === Public function implementation ============================================================================== */
 
-
 screen_t ScreenCreate(uint8_t digits, screen_driver_t driver) {
     screen_t self = malloc(sizeof(struct screen_s));
+    memset(self->points, 0, sizeof(self->points));
+
 
     if (digits > SCREEN_MAX_DIGITS) {
         digits = SCREEN_MAX_DIGITS;
@@ -92,12 +93,10 @@ screen_t ScreenCreate(uint8_t digits, screen_driver_t driver) {
         self->current_digit = 0;
         self->flashing_count = 0;
         self->flashing_frequency = 0;
-        //self->flashing_point_enable = false;
-
+        // self->flashing_point_enable = false;
     }
     return self;
 }
-
 
 void ScreenWriteBCD(screen_t screen, uint8_t value[], uint8_t size) {
     memset(screen->value, 0, sizeof(screen->value));
@@ -109,7 +108,6 @@ void ScreenWriteBCD(screen_t screen, uint8_t value[], uint8_t size) {
     }
 }
 
-
 void ScreenRefresh(screen_t self) {
     uint8_t segments;
 
@@ -117,6 +115,11 @@ void ScreenRefresh(screen_t self) {
     self->current_digit = (self->current_digit + 1) % self->digits;
 
     segments = self->value[self->current_digit];
+
+    // Asegurar que el punto esté agregado si fue seteado
+    if (self->points[self->current_digit]) {
+        segments |= SEGMENT_P;
+    }
 
     // Si hay parpadeo activo para dígitos o puntos
     if (self->flashing_frequency != 0) {
@@ -128,8 +131,7 @@ void ScreenRefresh(screen_t self) {
         if (self->flashing_count < (self->flashing_frequency / 2)) {
 
             // Apaga segmentos si el dígito está en rango
-            if ((self->current_digit >= self->flashing_from) &&
-                (self->current_digit <= self->flashing_to)) {
+            if ((self->current_digit >= self->flashing_from) && (self->current_digit <= self->flashing_to)) {
                 segments = 0;
             }
 
@@ -145,7 +147,6 @@ void ScreenRefresh(screen_t self) {
     self->driver->DigitsTurnOn(self->current_digit);
 }
 
-
 int DisplayFlashDigits(screen_t self, uint8_t from, uint8_t to, uint16_t divisor) {
     int result = 0;
     if ((from > to) || (from >= SCREEN_MAX_DIGITS) || (to >= SCREEN_MAX_DIGITS)) {
@@ -155,7 +156,8 @@ int DisplayFlashDigits(screen_t self, uint8_t from, uint8_t to, uint16_t divisor
     } else {
         self->flashing_from = from;
         self->flashing_to = to;
-        self->flashing_frequency = 2 * divisor; // Multiplicamos por 2 para tener en cuenta el tiempo de encendido y apagado
+        self->flashing_frequency =
+            2 * divisor; // Multiplicamos por 2 para tener en cuenta el tiempo de encendido y apagado
         self->flashing_count = 0;
     }
 
@@ -169,8 +171,8 @@ int DisplayFlashPoints(screen_t self, uint8_t from, uint8_t to, uint16_t divisor
     } else if (!self) {
         result = -1;
     } else {
-        self->flashing_point_from = from-1;
-        self->flashing_point_to = to-1;
+        self->flashing_point_from = from;
+        self->flashing_point_to = to;
         self->flashing_frequency = 2 * divisor;
         self->flashing_count = 0;
     }
@@ -178,15 +180,9 @@ int DisplayFlashPoints(screen_t self, uint8_t from, uint8_t to, uint16_t divisor
     return result;
 }
 
-void ScreenSetPoint(screen_t screen, uint8_t digit, bool state) {
-    
-    digit = digit-1; // Ajusta el digito para que el digito 1 sea el 0 en el array
-    if ((screen != NULL) && (digit < screen->digits)) {
-        if (state) {
-            screen->value[digit] |= SEGMENT_P;
-        } else {
-            screen->value[digit] &= ~SEGMENT_P;
-        }
+void ScreenSetPoint(screen_t self, uint8_t digit, bool state) {
+    if (digit < self->digits) {
+        self->points[digit] = state;
     }
 }
 

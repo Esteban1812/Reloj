@@ -77,7 +77,7 @@ static bool ClockIsValidTime(const clock_time_t * time) {
 
 clock_t Clock_Create(uint16_t tick_per_second) {
     static struct clock_s self[1];
-    memset(self, 0, sizeof(struct clock_s)); // Initialize the clock structure to zero
+    memset(self, 0, sizeof(struct clock_s)); // inicializa el reloj en cero
     self->ticks_per_second = tick_per_second;
     self->valid = false;
     self->alarm_postponed = false;

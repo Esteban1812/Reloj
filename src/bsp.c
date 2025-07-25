@@ -150,16 +150,16 @@ Board_t Board_Create(void) {
         self->buzzer = DigitalOutput_Create(BUZZER_GPIO, BUZZER_BIT);
 
         Chip_SCU_PinMuxSet(KEY_F1_PORT, KEY_F1_PIN, SCU_MODE_INBUFF_EN | SCU_MODE_INACT | KEY_F1_FUNC);
-        self->increment = DigitalInput_Create(KEY_F1_GPIO, KEY_F1_BIT, false);
+        self->set_time = DigitalInput_Create(KEY_F1_GPIO, KEY_F1_BIT, false);
 
         Chip_SCU_PinMuxSet(KEY_F2_PORT, KEY_F2_PIN, SCU_MODE_INBUFF_EN | SCU_MODE_INACT | KEY_F2_FUNC);
-        self->decrement = DigitalInput_Create(KEY_F2_GPIO, KEY_F2_BIT, false);
+        self->set_alarm = DigitalInput_Create(KEY_F2_GPIO, KEY_F2_BIT, false);
 
         Chip_SCU_PinMuxSet(KEY_F3_PORT, KEY_F3_PIN, SCU_MODE_INBUFF_EN | SCU_MODE_INACT | KEY_F3_FUNC);
-        self->set_alarm = DigitalInput_Create(KEY_F3_GPIO, KEY_F3_BIT, false);
+        self->decrement = DigitalInput_Create(KEY_F3_GPIO, KEY_F3_BIT, false);
 
         Chip_SCU_PinMuxSet(KEY_F4_PORT, KEY_F4_PIN, SCU_MODE_INBUFF_EN | SCU_MODE_INACT | KEY_F4_FUNC);
-        self->set_time = DigitalInput_Create(KEY_F4_GPIO, KEY_F4_BIT, false);
+        self->increment = DigitalInput_Create(KEY_F4_GPIO, KEY_F4_BIT, false);
 
         Chip_SCU_PinMuxSet(KEY_ACCEPT_PORT, KEY_ACCEPT_PIN, SCU_MODE_INBUFF_EN | SCU_MODE_INACT | KEY_ACCEPT_FUNC);
         self->accept = DigitalInput_Create(KEY_ACCEPT_GPIO, KEY_ACCEPT_BIT, false);

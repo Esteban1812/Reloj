@@ -110,19 +110,20 @@ bool DigitalInput_GetIsActive(digital_input_t self) {
 }
 
 digital_state_t Digital_WasChanged(digital_input_t self) {
-
     digital_state_t result = DIGITAL_INPUT_WAS_CHANGED;
 
     bool state = DigitalInput_GetIsActive(self);
 
-    if (state && self->last_state) {
+    if (!self->last_state && state) {
         result = DIGITAL_INPUT_WAS_ACTIVATED;
-    } else if (!state && !self->last_state) {
+    } else if (self->last_state && !state) {
         result = DIGITAL_INPUT_WAS_DEACTIVATED;
     }
+
     self->last_state = state;
     return result;
 }
+
 
 bool Digital_WasActivated(digital_input_t self) {
     return DIGITAL_INPUT_WAS_ACTIVATED == Digital_WasChanged(self);

@@ -65,6 +65,8 @@ typedef struct Board_s {
 
 /* === Public variable declarations ================================================================================ */
 
+//static volatile uint32_t milisegundos; // Variable global para almacenar el tiempo en milisegundos 
+
 /* === Public function declarations ================================================================================ */
 
 /**
@@ -81,7 +83,7 @@ Board_t Board_Create(void);
  *
  * @param ticks Número de ticks para el temporizador.
  */
-void SysTickInt(uint32_t ticks);
+void SysTickInt(void);
 
 /* === End of conditional blocks =================================================================================== */
 

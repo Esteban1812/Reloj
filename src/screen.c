@@ -47,13 +47,15 @@ struct screen_s {
     bool points[SCREEN_MAX_DIGITS];   // puntos decimales de cada digito
     uint8_t current_digit;            // digito actual que se esta mostrando
     screen_driver_t driver;           // puntero a la estructura de driver de pantalla
-    uint8_t flashing_from;            // rango de digitos a parpadear
-    uint8_t flashing_to;              // rango de digitos a parpadear
-    uint8_t flashing_count;           // contador de parpadeo
-    uint16_t flashing_frequency;      // frecuencia de parpadeo en milisegundos
-    uint8_t flashing_point_from;      // punto decimal del primer digito a parpadear
-    uint8_t flashing_point_to;        // punto decimal del ultimo digito a parpadear
-    // bool flashing_point_enable; // habilita el punto decimal en los digitos que parpadean
+    uint8_t flashing_digits_from;
+    uint8_t flashing_digits_to;
+    uint16_t flashing_digits_frequency;
+    uint8_t flashing_digits_count;
+
+    uint8_t flashing_points_from;
+    uint8_t flashing_points_to;
+    uint16_t flashing_points_frequency;
+    uint8_t flashing_points_count;
 };
 
 /* === Private function declarations =============================================================================== */
@@ -83,7 +85,6 @@ screen_t ScreenCreate(uint8_t digits, screen_driver_t driver) {
     screen_t self = malloc(sizeof(struct screen_s));
     memset(self->points, 0, sizeof(self->points));
 
-
     if (digits > SCREEN_MAX_DIGITS) {
         digits = SCREEN_MAX_DIGITS;
     }
@@ -91,9 +92,10 @@ screen_t ScreenCreate(uint8_t digits, screen_driver_t driver) {
         self->digits = digits;
         self->driver = driver;
         self->current_digit = 0;
-        self->flashing_count = 0;
-        self->flashing_frequency = 0;
-        // self->flashing_point_enable = false;
+        self->flashing_digits_count = 0;
+        self->flashing_digits_frequency = 0;
+        self->flashing_points_frequency = 0;
+        self->flashing_points_count = 0;
     }
     return self;
 }
@@ -113,34 +115,43 @@ void ScreenRefresh(screen_t self) {
 
     self->driver->DigitsTurnOff();
     self->current_digit = (self->current_digit + 1) % self->digits;
-
     segments = self->value[self->current_digit];
 
-    // Asegurar que el punto esté agregado si fue seteado
-    if (self->points[self->current_digit]) {
-        segments |= SEGMENT_P;
+    // Parpadeo de dígitos
+    bool show_digit = true;
+    if (self->flashing_digits_frequency > 0) {
+        if (self->current_digit == 0) {
+            self->flashing_digits_count = (self->flashing_digits_count + 1) % self->flashing_digits_frequency;
+        }
+        if (self->flashing_digits_count < (self->flashing_digits_frequency / 2)) {
+            if (self->current_digit >= self->flashing_digits_from &&
+                self->current_digit <= self->flashing_digits_to) {
+                show_digit = false;
+            }
+        }
     }
 
-    // Si hay parpadeo activo para dígitos o puntos
-    if (self->flashing_frequency != 0) {
+    // Parpadeo de puntos
+    bool show_point = self->points[self->current_digit];
+    if (self->flashing_points_frequency > 0) {
         if (self->current_digit == 0) {
-            self->flashing_count = (self->flashing_count + 1) % (self->flashing_frequency);
+            self->flashing_points_count = (self->flashing_points_count + 1) % self->flashing_points_frequency;
         }
-
-        // Primera mitad del ciclo: parpadeo activo
-        if (self->flashing_count < (self->flashing_frequency / 2)) {
-
-            // Apaga segmentos si el dígito está en rango
-            if ((self->current_digit >= self->flashing_from) && (self->current_digit <= self->flashing_to)) {
-                segments = 0;
-            }
-
-            // Apaga sólo el punto decimal si está habilitado y en rango
-            if ((self->current_digit >= self->flashing_point_from) &&
-                (self->current_digit <= self->flashing_point_to)) {
-                segments &= ~SEGMENT_P;
+        if (self->flashing_points_count < (self->flashing_points_frequency / 2)) {
+            if (self->current_digit >= self->flashing_points_from &&
+                self->current_digit <= self->flashing_points_to) {
+                show_point = false;
             }
         }
+    }
+
+    if (!show_digit) {
+        segments = 0;
+    }
+    if (show_point) {
+        segments |= SEGMENT_P;
+    } else {
+        segments &= ~SEGMENT_P; // Asegura que el punto decimal esté apagado si no se debe mostrar
     }
 
     self->driver->SegmentsUpdate(segments);
@@ -148,43 +159,28 @@ void ScreenRefresh(screen_t self) {
 }
 
 int DisplayFlashDigits(screen_t self, uint8_t from, uint8_t to, uint16_t divisor) {
-    int result = 0;
-    if ((from > to) || (from >= SCREEN_MAX_DIGITS) || (to >= SCREEN_MAX_DIGITS)) {
-        result = -1;
-    } else if (!self) {
-        result = -1;
-    } else {
-        self->flashing_from = from;
-        self->flashing_to = to;
-        self->flashing_frequency =
-            2 * divisor; // Multiplicamos por 2 para tener en cuenta el tiempo de encendido y apagado
-        self->flashing_count = 0;
-    }
-
-    return result;
+    if (!self || from > to || to >= SCREEN_MAX_DIGITS) return -1;
+    self->flashing_digits_from = from;
+    self->flashing_digits_to = to;
+    self->flashing_digits_frequency = 2 * divisor;
+    self->flashing_digits_count = 0;
+    return 0;
 }
 
 int DisplayFlashPoints(screen_t self, uint8_t from, uint8_t to, uint16_t divisor) {
-    int result = 0;
-    if ((from > to) || (from >= SCREEN_MAX_DIGITS) || (to >= SCREEN_MAX_DIGITS)) {
-        result = -1;
-    } else if (!self) {
-        result = -1;
-    } else {
-        self->flashing_point_from = from;
-        self->flashing_point_to = to;
-        self->flashing_frequency = 2 * divisor;
-        self->flashing_count = 0;
-    }
-
-    return result;
+    if (!self || from > to || to >= SCREEN_MAX_DIGITS) return -1;
+    self->flashing_points_from = from;
+    self->flashing_points_to = to;
+    self->flashing_points_frequency = 2 * divisor;
+    self->flashing_points_count = 0;
+    return 0;
 }
+
 
 void ScreenSetPoint(screen_t self, uint8_t digit, bool state) {
     if (digit < self->digits) {
         self->points[digit] = state;
     }
 }
-
 
 /* === End of documentation ======================================================================================== */

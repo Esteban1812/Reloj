@@ -66,8 +66,8 @@ digital_output_t DigitalOutput_Create(uint8_t port, uint8_t pin) {
     if (self != NULL) {
         self->port = port;
         self->pin = pin;
-        Chip_GPIO_SetPinState(LPC_GPIO_PORT, self->port, self->pin, false);
-        Chip_GPIO_SetPinDIR(LPC_GPIO_PORT, self->port, self->pin, true);
+        Chip_GPIO_SetPinState(LPC_GPIO_PORT, self->port, self->pin, true); // Inicializa el pin en alto
+        Chip_GPIO_SetPinDIR(LPC_GPIO_PORT, self->port, self->pin, true); 
     }
     return self;
 }

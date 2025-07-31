@@ -98,8 +98,12 @@ bool ClockGetTime(clock_t self, clock_time_t * result) {
 
 bool ClockSetTime(clock_t self, const clock_time_t * new_time) {
 
-    self->valid = ClockIsValidTime(new_time);
-    memcpy(&self->current_time, new_time, sizeof(clock_time_t));
+    if (!self || !new_time || !ClockIsValidTime(new_time)) {
+        self->valid = false; // Marca el reloj como no válido si la hora es incorrecta
+    } else {
+        self->valid = true; // Marca el reloj como válido si la hora es correcta
+        memcpy(&self->current_time, new_time, sizeof(clock_time_t)); // Copia la nueva hora al reloj
+    }
     return self->valid;
 }
 
@@ -151,28 +155,25 @@ void ClockNewTick(clock_t self) {
 
     // Cancelar posponer si llegó la hora
     if (self->alarm_postponed) {
-    if (memcmp(&self->current_time, &self->postponed_until, sizeof(clock_time_t)) == 0) {
-        self->alarm_postponed = false;
-        self->alarm_sounded_today = true; // <- clave: evita que se dispare nuevamente más adelante
+        if (memcmp(&self->current_time, &self->postponed_until, sizeof(clock_time_t)) == 0) {
+            self->alarm_postponed = false;
+            self->alarm_sounded_today = true; // <- clave: evita que se dispare nuevamente más adelante
 
-        if (self->alarm_enabled && self->alarm_callback) {
-            self->alarm_callback();
+            if (self->alarm_enabled && self->alarm_callback) {
+                self->alarm_callback();
+            }
         }
+        return; // <- clave: si estaba pospuesta, no seguir ejecutando
     }
-    return; // <- clave: si estaba pospuesta, no seguir ejecutando
-}
-
 
     // Ejecutar alarma solo si no está pospuesta
-    if (self->alarm_enabled && self->alarm_callback &&
-        !self->alarm_postponed && !self->alarm_sounded_today &&
+    if (self->alarm_enabled && self->alarm_callback && !self->alarm_postponed && !self->alarm_sounded_today &&
         memcmp(&self->alarm_time, &self->current_time, sizeof(clock_time_t)) == 0) {
 
         self->alarm_callback();
         self->alarm_sounded_today = true;
     }
 }
-
 
 void ClockSetAlarm(clock_t self, const clock_time_t * alarm) {
     if (!self || !alarm)
@@ -202,7 +203,7 @@ void ClockPostponeAlarm(clock_t self, uint8_t minutos) {
     if (!self || !self->valid || minutos == 0)
         return;
 
-    clock_time_t *base = self->alarm_postponed ? &self->postponed_until : &self->current_time;
+    clock_time_t * base = self->alarm_postponed ? &self->postponed_until : &self->current_time;
     self->postponed_until = *base;
 
     self->postponed_until.time.minutes[0] += minutos;
@@ -223,17 +224,13 @@ void ClockPostponeAlarm(clock_t self, uint8_t minutos) {
     }
 
     if (self->postponed_until.time.hours[1] > 2 ||
-       (self->postponed_until.time.hours[1] == 2 && self->postponed_until.time.hours[0] > 3)) {
+        (self->postponed_until.time.hours[1] == 2 && self->postponed_until.time.hours[0] > 3)) {
         self->postponed_until.time.hours[1] = 0;
         self->postponed_until.time.hours[0] = 0;
     }
 
     self->alarm_postponed = true;
     self->alarm_sounded_today = false;
-
-
 }
-
-
 
 /* === End of documentation ======================================================================================== */

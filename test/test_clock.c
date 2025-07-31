@@ -46,6 +46,7 @@ SPDX-License-Identifier: MIT
 -17- Hacer sonar la alarma y posponerla.
 -18- Hacer sonar la alarma y cancelarla hasta el otro dia.
 -19- Si se pospone dos veces la alarma, debe sonar después del segundo posponer
+-20- ClockSetTime seguido de ClockGetTime debe devolver la hora seteada.
  */
 
 /* === Headers files inclusions ==================================================================================== */
@@ -112,14 +113,15 @@ void test_set_up_with_invalid_time(void) {
         // coloco una Hora invalida para hacer que la prueba falle, y no pase de suerte como me paso
     };
 
-    clock_t clock = Clock_Create(CLOCK_TICK_PER_SECOND);
-    TEST_ASSERT_FALSE(ClockGetTime(clock, &current_time));
-    TEST_ASSERT_EACH_EQUAL_UINT8(0, current_time.bcd, 6);
+    clock_t clock_local = Clock_Create(CLOCK_TICK_PER_SECOND);
+    TEST_ASSERT_FALSE(
+    ClockGetTime(clock_local, &current_time)); // Verifico que la hora no se pueda obtener porque es inválida
+    TEST_ASSERT_EACH_EQUAL_UINT8(0, current_time.bcd, 6); // Verifico que la hora sea 00:00:00
 }
 
 /**
  * @brief Al ajustar la hora del reloj con valores correctos, queda en hora y es válida.
- * primero creo una hora valida(con valores correctos), luego la ajusto y verifico que quede en 00:00:00
+ * primero creo una hora valida(con valores correctos), luego la ajusto y verifico que quede en en la hora seteada
  */
 
 void test_set_up_and_adjust_with_valid_time(void) {
@@ -227,10 +229,10 @@ void test_clock_advance_one_day(void) {
  * La función debe devolver false pero NO romper.
  */
 void test_get_time_with_null_pointer(void) {
-    clock = Clock_Create(CLOCK_TICK_PER_SECOND);
+    clock_t clock_local = Clock_Create(CLOCK_TICK_PER_SECOND);
 
     // No seteamos la hora, está inválida por defecto
-    bool result = ClockGetTime(clock, NULL);
+    bool result = ClockGetTime(clock_local, NULL);
 
     // La función debe devolver false pero NO romper
     TEST_ASSERT_FALSE(result);
@@ -477,6 +479,21 @@ void test_alarm_multiple_postpones(void) {
     SimulateSeconds(clock, 90); // llegar a 00:03:00
 
     TEST_ASSERT_TRUE_MESSAGE(alarm, "La alarma no sono despues del segundo posponer");
+}
+
+/**
+ * @brief ClockSetTime seguido de ClockGetTime debe devolver la hora seteada.
+ */
+void test_clock_set_and_get_time(void) {
+    clock_time_t input_time = {
+        .bcd = {6, 5, 4, 3, 2, 1} // 12:34:56
+    };
+    clock_time_t output_time = {0};
+
+    clock_t clock_local = Clock_Create(CLOCK_TICK_PER_SECOND);
+    TEST_ASSERT_TRUE(ClockSetTime(clock_local, &input_time)); //asegura que ClockSetTime() devuelva true, indicando que la hora fue aceptada como válida.
+    TEST_ASSERT_TRUE(ClockGetTime(clock_local, &output_time)); // La función ClockGetTime() debería devolver true, ya que la hora fue previamente seteada.
+    TEST_ASSERT_EQUAL_UINT8_ARRAY(input_time.bcd, output_time.bcd, 6); //Si ClockSetTime o ClockGetTime fallan al copiar, esta comparación detecta el problema.
 }
 
 /* === End of documentation ========================================================================================*/

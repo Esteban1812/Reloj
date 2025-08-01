@@ -44,7 +44,10 @@ struct clock_s {
     bool alarm_postponed;         // Indica si la alarma está pospuesta
     bool alarm_enabled;           // Indica si la alarma está habilitada
     bool valid;                   // Indica si la hora actual es válida (ha sido ajustada con ClockSetTime)
+    bool valid_alarm;             // Indica si hay una alarma configurada
     bool alarm_sounded_today;     // Indica si la alarma ha sonado hoy
+    bool alarm_cancelled_today;   // Indica si la alarma fue cancelada hoy
+    bool alarm_is_sounding;       // Indica si la alarma está sonando actualmente
     void (*alarm_callback)(void); // Puntero a la función de callback para la alarma
 };
 
@@ -83,6 +86,8 @@ clock_t Clock_Create(uint16_t tick_per_second) {
     self->alarm_postponed = false;
     self->alarm_enabled = false;
     self->alarm_sounded_today = false;
+    self->alarm_cancelled_today = false;
+    self->alarm_is_sounding = false; // Inicializa el estado de alarma sonando
     return self;
 }
 
@@ -120,6 +125,7 @@ void ClockNewTick(clock_t self) {
         if (self->current_time.time.hours[1] == 2 && self->current_time.time.hours[0] == 3 &&
             self->current_time.time.minutes[1] == 5 && self->current_time.time.minutes[0] == 9 &&
             self->current_time.time.seconds[1] == 5 && self->current_time.time.seconds[0] == 9) {
+            self->alarm_cancelled_today = false;
 
             memset(&self->current_time, 0, sizeof(clock_time_t));
             self->alarm_sounded_today = false;
@@ -158,7 +164,8 @@ void ClockNewTick(clock_t self) {
         if (memcmp(&self->current_time, &self->postponed_until, sizeof(clock_time_t)) == 0) {
             self->alarm_postponed = false;
             self->alarm_sounded_today = true; // <- clave: evita que se dispare nuevamente más adelante
-
+            self->alarm_is_sounding = true;   // Indica que la alarma está sonando
+            // Ejecutar el callback de alarma si está habilitado
             if (self->alarm_enabled && self->alarm_callback) {
                 self->alarm_callback();
             }
@@ -168,28 +175,43 @@ void ClockNewTick(clock_t self) {
 
     // Ejecutar alarma solo si no está pospuesta
     if (self->alarm_enabled && self->alarm_callback && !self->alarm_postponed && !self->alarm_sounded_today &&
-        memcmp(&self->alarm_time, &self->current_time, sizeof(clock_time_t)) == 0) {
+        !self->alarm_cancelled_today && memcmp(&self->alarm_time, &self->current_time, sizeof(clock_time_t)) == 0) {
 
         self->alarm_callback();
         self->alarm_sounded_today = true;
+        self->alarm_is_sounding = true; // Indica que la alarma está sonando
     }
 }
 
 void ClockSetAlarm(clock_t self, const clock_time_t * alarm) {
-    if (!self || !alarm)
-        return;
+    if (!ClockIsValidTime(alarm) && self) {
+        self->valid_alarm = false;
+    }
     memcpy(&self->alarm_time, alarm, sizeof(clock_time_t));
+    self->alarm_time.time.seconds[0] = 0;
+    self->alarm_time.time.seconds[1] = 0;
+    self->alarm_enabled = true;
+    self->alarm_sounded_today = false;
+    self->alarm_is_sounding = false;
+    self->valid_alarm= true;
 }
 
-void ClockGetAlarm(clock_t self, clock_time_t * alarm) {
-    if (!self || !alarm)
-        return;
+bool ClockGetAlarm(clock_t self, clock_time_t * alarm) {
+    if (!self || !alarm) {
+        return false;
+    }
     memcpy(alarm, &self->alarm_time, sizeof(clock_time_t));
+    return self->valid_alarm;
 }
 
 void ClockEnableAlarm(clock_t self, bool enable) {
     if (self) {
         self->alarm_enabled = enable;
+    }
+    if (!enable) {
+        self->alarm_postponed = false;     // Desactiva la alarma pospuesta al deshabilitar la alarma
+        self->alarm_sounded_today = false; // Resetea el estado de alarma sonando hoy
+        self->alarm_is_sounding = false;   // Resetea el estado de alarma sonando
     }
 }
 
@@ -199,7 +221,7 @@ void ClockAttachAlarmCallback(clock_t self, void (*callback)(void)) {
     }
 }
 
-void ClockPostponeAlarm(clock_t self, uint8_t minutos) {
+void ClockPostponeAlarm(clock_t self, uint32_t minutos) {
     if (!self || !self->valid || minutos == 0)
         return;
 
@@ -231,6 +253,40 @@ void ClockPostponeAlarm(clock_t self, uint8_t minutos) {
 
     self->alarm_postponed = true;
     self->alarm_sounded_today = false;
+    self->alarm_is_sounding = false; // Resetea el estado de alarma sonando
 }
+
+void ClockPostponeAlarmUntilTomorrow(clock_t self) {
+    if (!self || !self->valid)
+        return;
+    self->postponed_until = self->alarm_time;
+    // sumar un día en horas BCD
+    self->postponed_until.time.hours[1]++;
+    if (self->postponed_until.time.hours[1] > 2 ||
+        (self->postponed_until.time.hours[1] == 2 && self->postponed_until.time.hours[0] > 3)) {
+        self->postponed_until.time.hours[1] = 0;
+        self->postponed_until.time.hours[0] = 0;
+    }
+    self->alarm_postponed = true;
+    self->alarm_enabled = true; // Asegura que la alarma esté habilitada
+    self->alarm_sounded_today = false;
+    self->alarm_is_sounding = false;
+}
+
+
+bool ClockIsAlarmEnabled(clock_t self) {
+    return self->alarm_enabled;
+}
+bool ClockIsAlarmPostponed(clock_t self) {
+    return self->alarm_postponed;
+}
+bool ClockIsAlarmSoundedToday(clock_t self) {
+    return self->alarm_sounded_today;
+}
+
+bool ClockIsAlarmRinging(clock_t self) {
+    return self->alarm_is_sounding;
+}
+
 
 /* === End of documentation ======================================================================================== */

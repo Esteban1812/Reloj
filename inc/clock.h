@@ -107,8 +107,10 @@ void ClockNewTick(clock_t self);
  *
  * @param self Puntero a la instancia del reloj devuelta por la función Clock_Create.
  * @param alarm Estructura que contiene la hora de la alarma a establecer.
+ * @return Devuelve true si la alarma está configurada, false si no.
+ * @note La alarma se puede consultar posteriormente con ClockGetAlarm().
  */
-void ClockGetAlarm(clock_t self, clock_time_t * alarm);
+bool ClockGetAlarm(clock_t self, clock_time_t * alarm);
 
 /**
  * @brief setea la hora de la alarma del reloj.
@@ -147,7 +149,44 @@ void ClockAttachAlarmCallback(clock_t self, void (*callback)(void));
  * @note La alarma se pospondrá hasta el siguiente día si se excede el tiempo actual.
  */
 
-void ClockPostponeAlarm(clock_t self, uint8_t minutos);
+void ClockPostponeAlarm(clock_t self, uint32_t minutos);
+
+/**
+ * @brief Verifica si la alarma está habilitada.
+ *
+ * @param self Puntero a la instancia del reloj devuelta por la función Clock_Create.
+ * @return true si la alarma está habilitada, false en caso contrario.
+ */
+
+bool ClockIsAlarmEnabled(clock_t self);
+
+/**
+ * @brief Verifica si la alarma está pospuesta.
+ *
+ * @param self Puntero a la instancia del reloj devuelta por la función Clock_Create.
+ * @return true si la alarma está pospuesta, false en caso contrario.
+ */
+
+bool ClockIsAlarmPostponed(clock_t self);
+
+/**
+ * @brief Verifica si la alarma ha sonado hoy.
+ *
+ * @param self Puntero a la instancia del reloj devuelta por la función Clock_Create.
+ * @return true si la alarma ha sonado hoy, false en caso contrario.
+ */
+
+bool ClockIsAlarmSoundedToday(clock_t self);
+
+
+/**
+ * @brief Verifica si la alarma está sonando actualmente.
+ *
+ * @param self Puntero a la instancia del reloj devuelta por la función Clock_Create.
+ * @return true si la alarma está sonando, false en caso contrario.
+ */
+bool ClockIsAlarmRinging(clock_t self);
+
 
 /* === End of conditional blocks =================================================================================== */
 

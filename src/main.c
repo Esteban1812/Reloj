@@ -49,7 +49,8 @@
 
 /* === Macros definitions ====================================================================== */
 
-#define CLOCK_TICK_PER_SECOND 50 // Definimos la frecuencia del reloj
+#define CLOCK_TICK_PER_SECOND 2    // Definimos la frecuencia del reloj
+#define LONG_PRESS_TIME_MS    3000 // acntidad de tick (milisegundos) que defino para considerar una presion larga
 
 /* === Private data type declarations ========================================================== */
 
@@ -61,20 +62,30 @@ typedef enum {               // Estados del reloj:
     SETTING_ALARM_TIME,      // (4) Estado en el que se configura la hora de la alarma
     SETTING_ALARM_MINUTES,   // (5) Estado en el que se configura los minutos de la alarma
 } state_t;
+
+typedef struct {
+    bool is_pressed;           // Indica si el botón está siendo presionado
+    bool already_processed;    // Evita múltiples detecciones
+    uint32_t press_start_time; // Marca el instante en que empezó la pulsación
+} key_long_status_t;
+
 /* === Private variable declarations =========================================================== */
 
 /* === Private function declarations =========================================================== */
 
 /* === Public variable definitions ============================================================= */
 
-static Board_t board;                        // variable global para la placa
-static clock_t clock;                        // variable global para el reloj
-static volatile uint32_t milisegundos;       // Variable global para almacenar el tiempo en milisegundos
-static clock_time_t new_time;                // Variable para almacenar la nueva hora configurada
-static state_t state;                        // Variable para controlar el estado (MODO) del reloj
-static uint16_t set_time_pressed_ticks = 0;  // Ticks que F1 estuvo presionado
-static uint16_t set_alarm_pressed_ticks = 0; // Ticks que F2 estuvo presionado
-static uint8_t hora[4];                      // Hora configurada en formato BCD: [hora_dec, hora_uni, min_dec, min_uni]
+static Board_t board;                      // variable global para la placa
+static clock_t clock;                      // variable global para el reloj
+static volatile uint32_t milisegundos = 0; // Variable global para almacenar el tiempo en milisegundos
+
+static uint32_t t_aux=0;                    // Variable auxiliar para el conteo de los 30 s
+
+static clock_time_t new_time;              // Variable para almacenar la nueva hora configurada
+static state_t state;                      // Variable para controlar el estado (MODO) del reloj
+static key_long_status_t set_time_long_press = {0};
+static key_long_status_t set_alarm_long_press = {0};
+static uint8_t hora[4]; // Hora configurada en formato BCD: [hora_dec, hora_uni, min_dec, min_uni]
 
 /* === Private variable definitions ============================================================ */
 
@@ -84,14 +95,22 @@ static const uint8_t limits_hour[] = {2, 3}; // Limites de las horas
 /* === Private function implementation ========================================================= */
 void Change_status(state_t new_state) {
     state = new_state; // Cambia el estado del reloj
+    t_aux = 0; // Reinicia el contador auxiliar
     switch (state)     // Dependiendo del estado, se realizan diferentes acciones
     {
     case INITIALIZING:
         DisplayFlashDigits(board->screen, 0, 3, 50); // Parpadeo de todos los dígitos
+        ScreenSetPoint(board->screen, 1, true);
+        DisplayFlashPoints(board->screen, 1, 1, 50);
         break;
 
     case SHOWING_TIME:
         DisplayFlashDigits(board->screen, 0, 0, 0); // Muestra la hora actual sin parpadeo
+        ScreenSetPoint(board->screen, 0, false);
+        ScreenSetPoint(board->screen, 1, true);
+        ScreenSetPoint(board->screen, 2, false);
+        ScreenSetPoint(board->screen, 3, false);
+        DisplayFlashPoints(board->screen, 0, 3, 0);
         break;
     case SETTING_CURRENT_TIME:
         DisplayFlashDigits(board->screen, 0, 1, 100); // Parpadeo del dígito de las horas
@@ -158,31 +177,61 @@ void DecrementBCD(uint8_t num[2], const uint8_t limite[2]) {
     }
 }
 
+void AlarmCallback(void) {
+    DigitalOutput_Deactivate(board->blue_led); // activo en bajo
+}
+
+static bool CheckLongPress(digital_input_t key, key_long_status_t * status, uint32_t delay_ms) {
+    const uint32_t debounce = 50;
+
+    // Si el botón está siendo presionado
+    if (DigitalInput_GetIsActive(key)) {
+        if (!status->is_pressed) {
+            // Inicia el conteo
+            status->is_pressed = true;
+            status->press_start_time = t_aux;
+            status->already_processed = false;
+        } else if (!status->already_processed) {
+            // Calcula el tiempo sostenido
+            uint32_t held = t_aux - status->press_start_time;
+            if (held >= delay_ms + debounce) {
+                status->already_processed = true;
+                return true;
+            }
+        }
+    } else {
+        // Se soltó el botón: siempre reiniciamos
+        status->is_pressed = false;
+        status->already_processed = false;
+        status->press_start_time = 0;
+    }
+
+    return false;
+}
+
 /* === Public function implementation ========================================================= */
 
 int main(void) {
-    clock_time_t current_time;
+    clock_time_t current_time, alarm_time;
     board = Board_Create();
-    DigitalOutput_Deactivate(
-        board->buzzer); // el buzzer (led azul de la placa de abajo) se inicia apagado. Este es activo en bajo
 
     clock = Clock_Create(CLOCK_TICK_PER_SECOND);
+    ClockAttachAlarmCallback(clock, AlarmCallback); // Asocia el callback
+    ClockEnableAlarm(clock, false);                 // Desactiva la alarma al inicio
 
     // Configurar SysTick para generar interrupciones cada 1000 ms
     SysTickInt(); // Configura SysTick para 1 segundo
 
-    Change_status(INITIALIZING); // Cambia el estado inicial del reloj
+    Change_status(INITIALIZING);
 
     while (true) {
 
         switch (state) {
         case INITIALIZING:
-            if (DigitalInput_GetIsActive(board->set_time)) {
-                set_time_pressed_ticks++;
-            } else {
-                set_time_pressed_ticks = 0; // Reinicia el contador si F1 no está presionado
-            }
-            if (set_time_pressed_ticks >= 3000) {   // Si F1 se mantiene presionado por 3 segundo
+
+
+            if (CheckLongPress(board->set_time, &set_time_long_press, LONG_PRESS_TIME_MS)) {
+
                 ClockGetTime(clock, &current_time); // Obtener hora actual del reloj
 
                 hora[0] = current_time.bcd[5]; // hora decenas
@@ -192,70 +241,79 @@ int main(void) {
 
                 ScreenWriteBCD(board->screen, hora, sizeof(hora)); // Mostrar hora actual en pantalla
                 Change_status(SETTING_CURRENT_MINUTES);
-                set_time_pressed_ticks = 0; // Reinicia el contador
             }
+            if (CheckLongPress(board->set_alarm, &set_alarm_long_press, LONG_PRESS_TIME_MS)) {
 
-            if (DigitalInput_GetIsActive(board->set_alarm)) {
-                set_alarm_pressed_ticks++;
-                if (set_alarm_pressed_ticks >= 3000) {  // Si F2 se mantiene presionado por 3 segundo
-                    ClockGetTime(clock, &current_time); // Obtener hora actual del reloj
+                ClockGetTime(clock, &alarm_time); // Obtener hora actual del reloj
 
-                    hora[0] = current_time.bcd[5]; // hora decenas
-                    hora[1] = current_time.bcd[4]; // hora unidades
-                    hora[2] = current_time.bcd[3]; // minutos decenas
-                    hora[3] = current_time.bcd[2]; // minutos unidades
+                hora[0] = alarm_time.bcd[5]; // hora decenas
+                hora[1] = alarm_time.bcd[4]; // hora unidades
+                hora[2] = alarm_time.bcd[3]; // minutos decenas
+                hora[3] = alarm_time.bcd[2]; // minutos unidades
 
-                    ScreenWriteBCD(board->screen, hora, sizeof(hora)); // Mostrar hora actual en pantalla
-                    Change_status(SETTING_ALARM_MINUTES);
-                    set_alarm_pressed_ticks = 0; // Reinicia el contador
-                }
+                ScreenWriteBCD(board->screen, hora, sizeof(hora)); // Mostrar hora actual en pantalla
+                Change_status(SETTING_ALARM_MINUTES);
             }
             break;
 
         case SHOWING_TIME:
-            if (DigitalInput_GetIsActive(board->set_time)) {
-                set_time_pressed_ticks++;
-                if (set_time_pressed_ticks >= 3000) {   // Si F1 se mantiene presionado por 3 segundo
-                    ClockGetTime(clock, &current_time); // Obtener hora actual del reloj
-
-                    hora[0] = current_time.bcd[5]; // hora decenas
-                    hora[1] = current_time.bcd[4]; // hora unidades
-                    hora[2] = current_time.bcd[3]; // minutos decenas
-                    hora[3] = current_time.bcd[2]; // minutos unidades
-
-                    ScreenWriteBCD(board->screen, hora, sizeof(hora)); // Mostrar hora actual en pantalla
-                    Change_status(SETTING_CURRENT_MINUTES);
-                    set_time_pressed_ticks = 0; // Reinicia el contador
-                }
+            if (ClockIsAlarmEnabled(clock)) {
+                ScreenSetPoint(board->screen, 3, true);
             } else {
-                set_time_pressed_ticks = 0; // Reinicia el contador si F1 no está presionado
+                ScreenSetPoint(board->screen, 3, false);
             }
-            if (DigitalInput_GetIsActive(board->set_alarm)) {
-                set_alarm_pressed_ticks++;
-                if (set_alarm_pressed_ticks >= 3000) {  // Si F2 se mantiene presionado por 3 segundo
-                    ClockGetTime(clock, &current_time); // Obtener hora actual del reloj
 
-                    hora[0] = current_time.bcd[5]; // hora decenas
-                    hora[1] = current_time.bcd[4]; // hora unidades
-                    hora[2] = current_time.bcd[3]; // minutos decenas
-                    hora[3] = current_time.bcd[2]; // minutos unidades
-
-                    ScreenWriteBCD(board->screen, hora, sizeof(hora)); // Mostrar hora actual en pantalla
-                    Change_status(SETTING_ALARM_MINUTES);
-                    set_alarm_pressed_ticks = 0; // Reinicia el contador
+            if (ClockIsAlarmRinging(clock)) { // alarma sonando
+                if (Digital_WasActivated(board->accept)) {
+                    ClockPostponeAlarm(clock, 5);            // Pospone la alarma 5 minutos
+                    DigitalOutput_Activate(board->blue_led); // apaga el LED azul
+                }
+                if (Digital_WasActivated(board->cancel)) {
+                    DigitalOutput_Activate(board->blue_led); // apaga el LED azul
+                    // ClockPostponeAlarmUntilTomorrow(clock); // pospone la alarma hasta mañana
+                    ClockPostponeAlarm(clock, 1440);
                 }
             } else {
-                set_alarm_pressed_ticks = 0; // Reinicia el contador si F2 no está presionado
+
+                if (Digital_WasActivated(board->accept)) {
+                    ClockEnableAlarm(clock, true); // Activa la alarma
+                }
+                if (Digital_WasActivated(board->cancel)) {
+                    ClockEnableAlarm(clock, false); // Desactiva la alarma
+                }
+            }
+            if (CheckLongPress(board->set_time, &set_time_long_press, LONG_PRESS_TIME_MS)) {
+
+                ClockGetTime(clock, &current_time); // Obtener hora actual del reloj
+
+                hora[0] = current_time.bcd[5]; // hora decenas
+                hora[1] = current_time.bcd[4]; // hora unidades
+                hora[2] = current_time.bcd[3]; // minutos decenas
+                hora[3] = current_time.bcd[2]; // minutos unidades
+
+                ScreenWriteBCD(board->screen, hora, sizeof(hora)); // Mostrar hora actual en pantalla
+                Change_status(SETTING_CURRENT_MINUTES);
+            }
+
+            if (CheckLongPress(board->set_alarm, &set_alarm_long_press, LONG_PRESS_TIME_MS)) {
+
+                ClockGetTime(clock, &current_time); // Obtener hora actual del reloj
+
+                hora[0] = current_time.bcd[5]; // hora decenas
+                hora[1] = current_time.bcd[4]; // hora unidades
+                hora[2] = current_time.bcd[3]; // minutos decenas
+                hora[3] = current_time.bcd[2]; // minutos unidades
+
+                ScreenWriteBCD(board->screen, hora, sizeof(hora)); // Mostrar hora actual en pantalla
+                Change_status(SETTING_ALARM_MINUTES);
             }
             break;
 
         case SETTING_CURRENT_TIME:
             if (Digital_WasActivated(board->increment)) {
                 IncrementBCD(hora, limits_hour);
-                ScreenWriteBCD(board->screen, hora, sizeof(hora)); // Actualiza la pantalla con la nueva hora
             } else if (Digital_WasActivated(board->decrement)) {
                 DecrementBCD(hora, limits_hour);
-                ScreenWriteBCD(board->screen, hora, sizeof(hora)); // Actualiza la pantalla con la nueva hora
             } else if (Digital_WasActivated(board->accept)) {
                 new_time.bcd[5] = hora[0];      // hora decenas
                 new_time.bcd[4] = hora[1];      // hora unidades
@@ -268,49 +326,52 @@ int main(void) {
             } else if (Digital_WasActivated(board->cancel)) {
                 Change_status(SHOWING_TIME); // Cancela la configuración y vuelve a mostrar la hora
             }
+            
+            ScreenWriteBCD(board->screen, hora, sizeof(hora)); // Actualiza la pantalla con la nueva hora
             break;
 
         case SETTING_CURRENT_MINUTES:
             if (Digital_WasActivated(board->increment)) {
                 IncrementBCD(&hora[2], limits_min);
-                ScreenWriteBCD(board->screen, hora, sizeof(hora)); // Actualiza la pantalla con la nueva hora
             } else if (Digital_WasActivated(board->decrement)) {
                 DecrementBCD(&hora[2], limits_min);
-                ScreenWriteBCD(board->screen, hora, sizeof(hora)); // Actualiza la pantalla con la nueva hora
             } else if (Digital_WasActivated(board->accept)) {
                 Change_status(SETTING_CURRENT_TIME); // Cambia al estado de mostrar la hora
             } else if (Digital_WasActivated(board->cancel)) {
                 Change_status(SHOWING_TIME); // Cancela la configuración y vuelve a mostrar la hora
             }
+            ScreenWriteBCD(board->screen, hora, sizeof(hora)); // Actualiza la pantalla con la nueva hora
             break;
+
         case SETTING_ALARM_TIME:
+
             if (Digital_WasActivated(board->increment)) {
                 IncrementBCD(hora, limits_hour);
-                ScreenWriteBCD(board->screen, hora, sizeof(hora)); // Actualiza la pantalla con la nueva hora
             } else if (Digital_WasActivated(board->decrement)) {
                 DecrementBCD(hora, limits_hour);
-                ScreenWriteBCD(board->screen, hora, sizeof(hora)); // Actualiza la pantalla con la nueva hora
             } else if (Digital_WasActivated(board->accept)) {
-                new_time.bcd[5] = hora[0];
-                new_time.bcd[4] = hora[1];
-                new_time.bcd[3] = hora[2];
-                new_time.bcd[2] = hora[3];
-                new_time.bcd[1] = 0;
-                new_time.bcd[0] = 0;
+                alarm_time.bcd[5] = hora[0];
+                alarm_time.bcd[4] = hora[1];
+                alarm_time.bcd[3] = hora[2];
+                alarm_time.bcd[2] = hora[3];
+                alarm_time.bcd[1] = 0;
+                alarm_time.bcd[0] = 0;
 
-                ClockSetAlarm(clock, &new_time);
+                ClockSetAlarm(clock, &alarm_time);
+                ClockEnableAlarm(clock, true); 
                 Change_status(SHOWING_TIME);
             } else if (Digital_WasActivated(board->cancel)) {
                 Change_status(SHOWING_TIME);
             }
-            break;
+            ScreenWriteBCD(board->screen, hora, sizeof(hora)); // Actualiza la pantalla con la nueva hora
+        break;
+
         case SETTING_ALARM_MINUTES:
+            ScreenWriteBCD(board->screen, hora, sizeof(hora)); // Actualiza la pantalla con la nueva hora               
             if (Digital_WasActivated(board->increment)) {
                 IncrementBCD(&hora[2], limits_min);
-                ScreenWriteBCD(board->screen, hora, sizeof(hora)); // Actualiza la pantalla con la nueva hora
             } else if (Digital_WasActivated(board->decrement)) {
                 DecrementBCD(&hora[2], limits_min);
-                ScreenWriteBCD(board->screen, hora, sizeof(hora)); // Actualiza la pantalla con la nueva hora
             } else if (Digital_WasActivated(board->accept)) {
                 Change_status(SETTING_ALARM_TIME);
             } else if (Digital_WasActivated(board->cancel)) {
@@ -320,6 +381,8 @@ int main(void) {
         default:
             break;
         }
+
+        
     }
 }
 
@@ -329,7 +392,9 @@ void SysTick_Handler(void) {
     static bool state_point = false; // Estado del punto decimal entre horas y minutos
     ClockNewTick(clock);
     milisegundos++; // Incrementa el contador de milisegundos
-    if (state <= SHOWING_TIME) {
+    t_aux++; // Incrementa el contador auxiliar
+
+    if (state == SHOWING_TIME) {
 
         ClockGetTime(clock, &current_time);
         hora[0] = current_time.bcd[5]; // Hora decenas

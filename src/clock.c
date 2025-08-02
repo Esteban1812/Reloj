@@ -1,7 +1,7 @@
 /*********************************************************************************************************************
 * Facultad de Ciencias Exactas y Tecnología
  * Universidad Nacional de Tucuman
- * Copyright (c) 2025, Esteban Ignacio Lobo Silva <nachosilva04.com>
+ * Copyright (c) 2025, Esteban Ignacio Lobo Silva <silvanacho04@gmail.com>
  * Copyright (c) 2025, Laboratorio de Electronica IV, Universidad Nacional de Tucumán, Argentina
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
@@ -193,7 +193,7 @@ void ClockSetAlarm(clock_t self, const clock_time_t * alarm) {
     self->alarm_enabled = true;
     self->alarm_sounded_today = false;
     self->alarm_is_sounding = false;
-    self->valid_alarm= true;
+    self->valid_alarm = true;
 }
 
 bool ClockGetAlarm(clock_t self, clock_time_t * alarm) {
@@ -253,7 +253,7 @@ void ClockPostponeAlarm(clock_t self, uint32_t minutos) {
 
     self->alarm_postponed = true;
     self->alarm_sounded_today = false;
-    self->alarm_is_sounding = false; // Resetea el estado de alarma sonando
+    self->alarm_is_sounding = false;
 }
 
 void ClockPostponeAlarmUntilTomorrow(clock_t self) {
@@ -268,11 +268,10 @@ void ClockPostponeAlarmUntilTomorrow(clock_t self) {
         self->postponed_until.time.hours[0] = 0;
     }
     self->alarm_postponed = true;
-    self->alarm_enabled = true; // Asegura que la alarma esté habilitada
+    self->alarm_enabled = true;
     self->alarm_sounded_today = false;
     self->alarm_is_sounding = false;
 }
-
 
 bool ClockIsAlarmEnabled(clock_t self) {
     return self->alarm_enabled;
@@ -287,6 +286,5 @@ bool ClockIsAlarmSoundedToday(clock_t self) {
 bool ClockIsAlarmRinging(clock_t self) {
     return self->alarm_is_sounding;
 }
-
 
 /* === End of documentation ======================================================================================== */

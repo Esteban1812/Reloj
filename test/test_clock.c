@@ -1,7 +1,7 @@
 /*********************************************************************************************************************
  * Facultad de Ciencias Exactas y Tecnología
  * Universidad Nacional de Tucuman
- * Copyright (c) 2025, Esteban Ignacio Lobo Silva <nachosilva04.com>
+ * Copyright (c) 2025, Esteban Ignacio Lobo Silva <silvanacho04@gmail.com>
  * Copyright (c) 2025, Laboratorio de Electronica IV, Universidad Nacional de Tucumán, Argentina
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
@@ -115,7 +115,7 @@ void test_set_up_with_invalid_time(void) {
 
     clock_t clock_local = Clock_Create(CLOCK_TICK_PER_SECOND);
     TEST_ASSERT_FALSE(
-    ClockGetTime(clock_local, &current_time)); // Verifico que la hora no se pueda obtener porque es inválida
+        ClockGetTime(clock_local, &current_time));        // Verifico que la hora no se pueda obtener porque es inválida
     TEST_ASSERT_EACH_EQUAL_UINT8(0, current_time.bcd, 6); // Verifico que la hora sea 00:00:00
 }
 
@@ -491,9 +491,15 @@ void test_clock_set_and_get_time(void) {
     clock_time_t output_time = {0};
 
     clock_t clock_local = Clock_Create(CLOCK_TICK_PER_SECOND);
-    TEST_ASSERT_TRUE(ClockSetTime(clock_local, &input_time)); //asegura que ClockSetTime() devuelva true, indicando que la hora fue aceptada como válida.
-    TEST_ASSERT_TRUE(ClockGetTime(clock_local, &output_time)); // La función ClockGetTime() debería devolver true, ya que la hora fue previamente seteada.
-    TEST_ASSERT_EQUAL_UINT8_ARRAY(input_time.bcd, output_time.bcd, 6); //Si ClockSetTime o ClockGetTime fallan al copiar, esta comparación detecta el problema.
+    TEST_ASSERT_TRUE(ClockSetTime(
+        clock_local,
+        &input_time)); // asegura que ClockSetTime() devuelva true, indicando que la hora fue aceptada como válida.
+    TEST_ASSERT_TRUE(ClockGetTime(
+        clock_local,
+        &output_time)); // La función ClockGetTime() debería devolver true, ya que la hora fue previamente seteada.
+    TEST_ASSERT_EQUAL_UINT8_ARRAY(
+        input_time.bcd, output_time.bcd,
+        6); // Si ClockSetTime o ClockGetTime fallan al copiar, esta comparación detecta el problema.
 }
 
 /* === End of documentation ========================================================================================*/

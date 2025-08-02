@@ -1,7 +1,7 @@
 /*********************************************************************************************************************
  * Facultad de Ciencias Exactas y Tecnología
  * Universidad Nacional de Tucuman
- * Copyright (c) 2025, Esteban Ignacio Lobo Silva <nachosilva04.com>
+ * Copyright (c) 2025, Esteban Ignacio Lobo Silva <silvanacho04@gmail.com>
  * Copyright (c) 2025, Laboratorio de Electronica IV, Universidad Nacional de Tucumán, Argentina
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
@@ -124,8 +124,7 @@ void ScreenRefresh(screen_t self) {
             self->flashing_digits_count = (self->flashing_digits_count + 1) % self->flashing_digits_frequency;
         }
         if (self->flashing_digits_count < (self->flashing_digits_frequency / 2)) {
-            if (self->current_digit >= self->flashing_digits_from &&
-                self->current_digit <= self->flashing_digits_to) {
+            if (self->current_digit >= self->flashing_digits_from && self->current_digit <= self->flashing_digits_to) {
                 show_digit = false;
             }
         }
@@ -138,8 +137,7 @@ void ScreenRefresh(screen_t self) {
             self->flashing_points_count = (self->flashing_points_count + 1) % self->flashing_points_frequency;
         }
         if (self->flashing_points_count < (self->flashing_points_frequency / 2)) {
-            if (self->current_digit >= self->flashing_points_from &&
-                self->current_digit <= self->flashing_points_to) {
+            if (self->current_digit >= self->flashing_points_from && self->current_digit <= self->flashing_points_to) {
                 show_point = false;
             }
         }
@@ -159,7 +157,8 @@ void ScreenRefresh(screen_t self) {
 }
 
 int DisplayFlashDigits(screen_t self, uint8_t from, uint8_t to, uint16_t divisor) {
-    if (!self || from > to || to >= SCREEN_MAX_DIGITS) return -1;
+    if (!self || from > to || to >= SCREEN_MAX_DIGITS)
+        return -1;
     self->flashing_digits_from = from;
     self->flashing_digits_to = to;
     self->flashing_digits_frequency = 2 * divisor;
@@ -168,14 +167,14 @@ int DisplayFlashDigits(screen_t self, uint8_t from, uint8_t to, uint16_t divisor
 }
 
 int DisplayFlashPoints(screen_t self, uint8_t from, uint8_t to, uint16_t divisor) {
-    if (!self || from > to || to >= SCREEN_MAX_DIGITS) return -1;
+    if (!self || from > to || to >= SCREEN_MAX_DIGITS)
+        return -1;
     self->flashing_points_from = from;
     self->flashing_points_to = to;
     self->flashing_points_frequency = 2 * divisor;
     self->flashing_points_count = 0;
     return 0;
 }
-
 
 void ScreenSetPoint(screen_t self, uint8_t digit, bool state) {
     if (digit < self->digits) {

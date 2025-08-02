@@ -1,7 +1,7 @@
 /*********************************************************************************************************************
  * Facultad de Ciencias Exactas y Tecnología
  * Universidad Nacional de Tucuman
- * Copyright (c) 2025, Esteban Ignacio Lobo Silva <nachosilva04.com>
+ * Copyright (c) 2025, Esteban Ignacio Lobo Silva <silvanacho04@gmail.com>
  * Copyright (c) 2025, Laboratorio de Electronica IV, Universidad Nacional de Tucumán, Argentina
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
@@ -67,7 +67,7 @@ digital_output_t DigitalOutput_Create(uint8_t port, uint8_t pin) {
         self->port = port;
         self->pin = pin;
         Chip_GPIO_SetPinState(LPC_GPIO_PORT, self->port, self->pin, true); // Inicializa el pin en alto
-        Chip_GPIO_SetPinDIR(LPC_GPIO_PORT, self->port, self->pin, true); 
+        Chip_GPIO_SetPinDIR(LPC_GPIO_PORT, self->port, self->pin, true);
     }
     return self;
 }
@@ -101,7 +101,7 @@ digital_input_t DigitalInput_Create(uint8_t gpio, uint8_t bit, bool inverted) {
 }
 
 bool DigitalInput_GetIsActive(digital_input_t self) {
-    bool state = Chip_GPIO_ReadPortBit(LPC_GPIO_PORT, self->port, self->pin) !=0;
+    bool state = Chip_GPIO_ReadPortBit(LPC_GPIO_PORT, self->port, self->pin) != 0;
 
     if (self->inverted) {
         state = !state;
@@ -123,7 +123,6 @@ digital_state_t Digital_WasChanged(digital_input_t self) {
     self->last_state = state;
     return result;
 }
-
 
 bool Digital_WasActivated(digital_input_t self) {
     return DIGITAL_INPUT_WAS_ACTIVATED == Digital_WasChanged(self);

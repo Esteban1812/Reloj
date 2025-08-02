@@ -1,9 +1,9 @@
 /*********************************************************************************************************************
  * Facultad de Ciencias Exactas y Tecnología
  * Universidad Nacional de Tucuman
- * Copyright (c) 2025, Esteban Ignacio Lobo Silva <nachosilva04.com>
+ * Copyright (c) 2025, Esteban Ignacio Lobo Silva <silvanacho04@gmail.com>
  * Copyright (c) 2025, Laboratorio de Electronica IV, Universidad Nacional de Tucumán, Argentina
- * 
+ *
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
 documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
@@ -66,7 +66,7 @@ typedef struct display_s * display_t;
 /**
  * @brief Funcion para crear una salida digital.
  * Esta funcion crea un objeto de la clase salida digital.
- * 
+ *
  * @param gpio puerto de la salida digital
  * @param bit pin de la salida digital
  * @return digital_output_t

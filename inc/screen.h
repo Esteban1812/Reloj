@@ -1,9 +1,9 @@
 /*********************************************************************************************************************
  * Facultad de Ciencias Exactas y Tecnología
  * Universidad Nacional de Tucuman
- * Copyright (c) 2025, Esteban Ignacio Lobo Silva <nachosilva04.com>
+ * Copyright (c) 2025, Esteban Ignacio Lobo Silva <silvanacho04@gmail.com>
  * Copyright (c) 2025, Laboratorio de Electronica IV, Universidad Nacional de Tucumán, Argentina
- * 
+ *
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
 documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
@@ -53,14 +53,14 @@ extern "C" {
 
 /* === Public data type declarations =============================================================================== */
 /** Estructura que representa una pantalla de 7 segmentos multiplexada. */
-typedef struct screen_s *screen_t;
+typedef struct screen_s * screen_t;
 
 typedef void (*digits_turn_off_t)(void);
 typedef void (*segments_update_t)(uint8_t value);
 typedef void (*digits_turn_on_t)(uint8_t digit);
 // Estructura que representa el driver de la pantalla de 7 segmentos multiplexada.
 // Contiene punteros a las funciones que manejan los digitos y segmentos de la pantalla.
-typedef struct screen_driver_s{
+typedef struct screen_driver_s {
     digits_turn_off_t DigitsTurnOff;
     segments_update_t SegmentsUpdate;
     digits_turn_on_t DigitsTurnOn;

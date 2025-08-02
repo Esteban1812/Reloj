@@ -1,10 +1,10 @@
 /*********************************************************************************************************************
 Facultad de Ciencias Exactas y Tecnología
  * Universidad Nacional de Tucuman
- * Copyright (c) 2025, Esteban Ignacio Lobo Silva <nachosilva04.com>
+ * Copyright (c) 2025, Esteban Ignacio Lobo Silva <silvanacho04@gmail.com>
  * Copyright (c) 2025, Laboratorio de Electronica IV, Universidad Nacional de Tucumán, Argentina
 
- Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
 documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
 rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit
 persons to whom the Software is furnished to do so, subject to the following conditions:
@@ -65,7 +65,7 @@ typedef struct Board_s {
 
 /* === Public variable declarations ================================================================================ */
 
-//static volatile uint32_t milisegundos; // Variable global para almacenar el tiempo en milisegundos 
+// static volatile uint32_t milisegundos; // Variable global para almacenar el tiempo en milisegundos
 
 /* === Public function declarations ================================================================================ */
 
@@ -80,8 +80,7 @@ Board_t Board_Create(void);
 
 /**
  * @brief Inicializa el temporizador del sistema.
- *
- * @param ticks Número de ticks para el temporizador.
+ * Configura el SysTick para generar interrupciones cada 1 ms.
  */
 void SysTickInt(void);
 

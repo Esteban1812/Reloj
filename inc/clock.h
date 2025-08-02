@@ -1,7 +1,7 @@
 /*********************************************************************************************************************
  * Facultad de Ciencias Exactas y Tecnología
  * Universidad Nacional de Tucuman
- * Copyright (c) 2025, Esteban Ignacio Lobo Silva <nachosilva04.com>
+ * Copyright (c) 2025, Esteban Ignacio Lobo Silva <silvanacho04@gmail.com>
  * Copyright (c) 2025, Laboratorio de Electronica IV, Universidad Nacional de Tucumán, Argentina
  *
 
@@ -186,6 +186,14 @@ bool ClockIsAlarmSoundedToday(clock_t self);
  * @return true si la alarma está sonando, false en caso contrario.
  */
 bool ClockIsAlarmRinging(clock_t self);
+
+/**
+ * @brief Pospone la alarma hasta el día siguiente.
+ *
+ * @param self Puntero a la instancia del reloj devuelta por la función Clock_Create.
+ * @note Esta función ajusta la hora de la alarma para que suene al día siguiente.
+ */
+void ClockPostponeAlarmUntilTomorrow(clock_t self);
 
 
 /* === End of conditional blocks =================================================================================== */

@@ -1,7 +1,7 @@
 /*********************************************************************************************************************
  * Facultad de Ciencias Exactas y Tecnología
  * Universidad Nacional de Tucuman
- * Copyright (c) 2025, Esteban Ignacio Lobo Silva <nachosilva04.com>
+ * Copyright (c) 2025, Esteban Ignacio Lobo Silva <silvanacho04@gmail.com>
  * Copyright (c) 2025, Laboratorio de Electronica IV, Universidad Nacional de Tucumán, Argentina
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
@@ -176,10 +176,4 @@ void SysTickInt(void) {
 
     SysTick_Config(SystemCoreClock / 1000); // Configura SysTick para generar interrupciones cada 1 ms
 }
-/*
-void SysTick_Handler(Board_t board) {
-    milisegundos++; // Incrementa el contador de milisegundos
-    ScreenRefresh(board->screen); // Actualiza la pantalla
-}
-*/
 /* === End of documentation ======================================================================================== */
